@@ -1,0 +1,72 @@
+DrsIdAvuValue: drs-id
+DrsAvuUnit: irods:drs
+DrsLogLevel: info
+DrsListenPort: 8080
+ServiceInfoSampleIntervalMinutes: 5
+ServiceInfoFilePath: /tmp/service-info.json
+
+IrodsHost: irods-provider
+IrodsPort: 1247
+IrodsZone: tempZone
+IrodsAdminUser: rods
+IrodsAdminPassword: rods
+IrodsAdminPasswordFile:
+IrodsPrimaryTestUser: test1
+IrodsPrimaryTestPassword: test
+IrodsSecondaryTestUser: test2
+IrodsSecondaryTestPassword: test
+IrodsAdminLoginType: native
+IrodsAuthScheme: native
+IrodsNegotiationPolicy: CS_NEG_DONT_CARE
+IrodsSSLConfig:
+  CACertificateFile:
+  CACertificatePath:
+  EncryptionKeySize: 32
+  EncryptionAlgorithm: AES-256-CBC
+  EncryptionSaltSize: 8
+  EncryptionNumHashRounds: 16
+  VerifyServer: hostname
+  DHParamsFile:
+  ServerName:
+IrodsDefaultResource: providerResc
+
+IrodsAccessMethodSupported: true
+IRODSAccessHost: 127.0.0.1
+IRODSAccessPort: 1247
+
+FileAccessMethodSupported: false
+
+HttpsAccessMethodSupported: true
+HttpsAccessImplementation: irods-go-rest
+HttpsAccessMethodBaseURL: http://127.0.0.1:8080/api/v1/path/contents?irods_path=
+HttpsAccessUseTicket: true
+HttpsResourceAffinity:
+  - Host: http://127.0.0.1:8080
+    Resources:
+      - providerResc
+  - Host: http://127.0.0.1:8082
+    Resources:
+      - resourceResc
+
+S3AccessMethodSupported: true
+S3AccessMethodBaseURL: s3://
+S3ResourceAffinity:
+  - Host: http://127.0.0.1:9001
+    Resources:
+      - providerResc
+  - Host: http://127.0.0.1:9002
+    Resources:
+      - resourceResc
+S3AccessEndpoint: http://127.0.0.1:9001
+
+DefaultTicketLifetimeMinutes: 720
+DefaultTicketUseLimit: 50
+
+OidcUrl: https://keycloak:8443
+OidcClientId: irods-go-drs
+OidcClientSecret: change-me
+OidcClientSecretFile:
+OidcRealm: drs
+OidcScope: openid profile email
+OidcInsecureSkipVerify: true
+

@@ -1,0 +1,10 @@
+Title: Starbase
+Subtitle: iRODS Grid Stack
+S3AdminEnabled: true
+
+AuthMode:
+  - Mode: native
+    AuthName: iRODS native
+  - Mode: pam
+    AuthName: iRODS PAM
+

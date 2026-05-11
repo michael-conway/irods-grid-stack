@@ -1,0 +1,246 @@
+name: irods-grid-stack
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:15}
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-irods}
+      IRODS_DB_NAME: ${IRODS_DB_NAME:-ICAT}
+      IRODS_DB_USER: ${IRODS_DB_USER:-irods}
+      IRODS_DB_PASSWORD: ${IRODS_DB_PASSWORD:-testpassword}
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME:-KEYCLOAK}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./irods/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  irods-provider:
+    hostname: irods-provider
+    platform: linux/amd64
+    build:
+      context: ./irods
+      dockerfile: Dockerfile.provider
+    image: ${IRODS_PROVIDER_IMAGE:-irods-grid-provider:5.0.3-ubuntu-noble}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      IRODS_ZONE: ${IRODS_ZONE:-tempZone}
+      IRODS_ADMIN_USER: ${IRODS_ADMIN_USER:-rods}
+      IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
+      IRODS_DB_HOST: postgres
+      IRODS_DB_PORT: ${IRODS_DB_PORT:-5432}
+      IRODS_DB_NAME: ${IRODS_DB_NAME:-ICAT}
+      IRODS_DB_USER: ${IRODS_DB_USER:-irods}
+      IRODS_DB_PASSWORD: ${IRODS_DB_PASSWORD:-testpassword}
+      IRODS_HOSTNAME: irods-provider
+      IRODS_VAULT_DIR: /var/lib/irods/iRODS/Vault
+    volumes:
+      - irods_provider_data:/var/lib/irods
+      - irods_provider_etc:/etc/irods
+    ports:
+      - "${IRODS_PROVIDER_HOST_PORT:-1247}:1247"
+      - "${IRODS_PROVIDER_CONTROL_PORT:-1248}:1248"
+      - "${IRODS_PROVIDER_DATA_PORT_RANGE:-20000-20199}:20000-20199"
+    cap_add:
+      - SYS_ADMIN
+
+  # Resource-server bootstrap is the first major implementation item in this
+  # skeleton. See docs/OPEN_ITEMS.md and irods/resource-entrypoint.sh.
+  irods-resource:
+    hostname: irods-resource
+    platform: linux/amd64
+    profiles: ["resource-server"]
+    build:
+      context: ./irods
+      dockerfile: Dockerfile.resource
+    image: ${IRODS_RESOURCE_IMAGE:-irods-grid-resource:5.0.3-ubuntu-noble}
+    depends_on:
+      irods-provider:
+        condition: service_started
+    environment:
+      IRODS_ZONE: ${IRODS_ZONE:-tempZone}
+      IRODS_ADMIN_USER: ${IRODS_ADMIN_USER:-rods}
+      IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
+      IRODS_HOSTNAME: irods-resource
+      IRODS_PROVIDER_HOST: irods-provider
+      IRODS_VAULT_DIR: /var/lib/irods/iRODS/Vault
+    volumes:
+      - irods_resource_data:/var/lib/irods
+      - irods_resource_etc:/etc/irods
+    ports:
+      - "${IRODS_RESOURCE_HOST_PORT:-2247}:1247"
+      - "${IRODS_RESOURCE_CONTROL_PORT:-2248}:1248"
+      - "${IRODS_RESOURCE_DATA_PORT_RANGE:-20200-20399}:20000-20199"
+    cap_add:
+      - SYS_ADMIN
+
+  keycloak:
+    hostname: keycloak
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:latest}
+    platform: linux/amd64
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME:-KEYCLOAK}
+      KC_DB_USERNAME: ${IRODS_DB_USER:-irods}
+      KC_DB_PASSWORD: ${IRODS_DB_PASSWORD:-testpassword}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      GOOGLE_OIDC_CLIENT_ID: ${GOOGLE_OIDC_CLIENT_ID:-}
+      GOOGLE_OIDC_CLIENT_SECRET: ${GOOGLE_OIDC_CLIENT_SECRET:-}
+      DRS_API_CLIENT_ID: ${DRS_API_CLIENT_ID:-irods-go-drs}
+      DRS_API_CLIENT_SECRET: ${DRS_API_CLIENT_SECRET:-change-me}
+      IRODS_REST_WEB_CLIENT_ID: ${IRODS_REST_WEB_CLIENT_ID:-irods-go-rest}
+      IRODS_REST_WEB_CLIENT_SECRET: ${IRODS_REST_WEB_CLIENT_SECRET:-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config/keycloak/realm-drs.json:/opt/keycloak/data/import/realm-drs.json:ro
+    ports:
+      - "${KEYCLOAK_HTTPS_HOST_PORT:-8443}:8443"
+      - "${KEYCLOAK_MANAGEMENT_HOST_PORT:-19090}:9000"
+
+  irods-go-rest-provider:
+    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    depends_on:
+      irods-provider:
+        condition: service_started
+    environment:
+      IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-provider.yaml
+      GOREST_PUBLIC_URL: ${REST_PROVIDER_PUBLIC_URL:-http://127.0.0.1:8080}
+      GOREST_IRODS_HOST: irods-provider
+      GOREST_IRODS_PORT: 1247
+      GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
+      GOREST_IRODS_ADMIN_USER: ${IRODS_ADMIN_USER:-rods}
+      GOREST_IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
+      GOREST_IRODS_DEFAULT_RESOURCE: ${IRODS_PROVIDER_RESOURCE:-providerResc}
+      GOREST_TEST_RESOURCE1: ${IRODS_PROVIDER_RESOURCE:-providerResc}
+      GOREST_TEST_RESOURCE2: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
+      GOREST_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
+      GOREST_OIDC_CLIENT_ID: ${IRODS_REST_WEB_CLIENT_ID:-irods-go-rest}
+      GOREST_OIDC_CLIENT_SECRET: ${IRODS_REST_WEB_CLIENT_SECRET:-change-me}
+      GOREST_OIDC_REALM: ${OIDC_REALM:-drs}
+      GOREST_OIDC_SCOPE: ${OIDC_SCOPE:-openid profile email}
+      GOREST_OIDC_INSECURE_SKIP_VERIFY: ${OIDC_INSECURE_SKIP_VERIFY:-true}
+    volumes:
+      - ./config/irods-go-rest/provider.yaml:/etc/irods-grid/rest-provider.yaml:ro
+      - ./state/shared-s3:/shared-s3
+    ports:
+      - "${REST_PROVIDER_HOST_PORT:-8080}:8080"
+
+  irods-go-rest-resource:
+    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    profiles: ["resource-server"]
+    depends_on:
+      irods-resource:
+        condition: service_started
+    environment:
+      IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-resource.yaml
+      GOREST_PUBLIC_URL: ${REST_RESOURCE_PUBLIC_URL:-http://127.0.0.1:8082}
+      GOREST_IRODS_HOST: irods-resource
+      GOREST_IRODS_PORT: 1247
+      GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
+      GOREST_IRODS_ADMIN_USER: ${IRODS_ADMIN_USER:-rods}
+      GOREST_IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
+      GOREST_IRODS_DEFAULT_RESOURCE: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
+      GOREST_TEST_RESOURCE1: ${IRODS_PROVIDER_RESOURCE:-providerResc}
+      GOREST_TEST_RESOURCE2: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
+      GOREST_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
+      GOREST_OIDC_CLIENT_ID: ${IRODS_REST_WEB_CLIENT_ID:-irods-go-rest}
+      GOREST_OIDC_CLIENT_SECRET: ${IRODS_REST_WEB_CLIENT_SECRET:-change-me}
+      GOREST_OIDC_REALM: ${OIDC_REALM:-drs}
+      GOREST_OIDC_SCOPE: ${OIDC_SCOPE:-openid profile email}
+      GOREST_OIDC_INSECURE_SKIP_VERIFY: ${OIDC_INSECURE_SKIP_VERIFY:-true}
+    volumes:
+      - ./config/irods-go-rest/resource.yaml:/etc/irods-grid/rest-resource.yaml:ro
+      - ./state/shared-s3:/shared-s3
+    ports:
+      - "${REST_RESOURCE_HOST_PORT:-8082}:8080"
+
+  starbase:
+    image: ${STARBASE_IMAGE:-ghcr.io/michael-conway/starbase:develop}
+    depends_on:
+      irods-go-rest-provider:
+        condition: service_started
+    volumes:
+      - ./config/starbase/starbase.yaml:/var/www/starbase/config/starbase.yaml:ro
+    ports:
+      - "${STARBASE_HOST_PORT:-8081}:8080"
+
+  irods-go-drs:
+    image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:latest}
+    depends_on:
+      irods-provider:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    environment:
+      DRS_CONFIG_FILE: /etc/irods-grid/drs-config.yaml
+      DRS_LISTEN_PORT: 8080
+      DRS_IRODS_HOST: irods-provider
+      DRS_IRODS_PORT: 1247
+      DRS_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
+      DRS_IRODS_ADMIN_USER: ${IRODS_ADMIN_USER:-rods}
+      DRS_IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
+      DRS_IRODS_PRIMARY_TEST_USER: ${IRODS_PRIMARY_TEST_USER:-test1}
+      DRS_IRODS_PRIMARY_TEST_PASSWORD: ${IRODS_PRIMARY_TEST_PASSWORD:-test}
+      DRS_IRODS_SECONDARY_TEST_USER: ${IRODS_SECONDARY_TEST_USER:-test2}
+      DRS_IRODS_SECONDARY_TEST_PASSWORD: ${IRODS_SECONDARY_TEST_PASSWORD:-test}
+      DRS_IRODS_DEFAULT_RESOURCE: ${IRODS_PROVIDER_RESOURCE:-providerResc}
+      DRS_IRODS_ACCESS_HOST: ${DRS_IRODS_ACCESS_HOST:-127.0.0.1}
+      DRS_IRODS_ACCESS_PORT: ${IRODS_PROVIDER_HOST_PORT:-1247}
+      DRS_HTTPS_ACCESS_METHOD_BASE_URL: ${DRS_HTTPS_ACCESS_METHOD_BASE_URL:-http://127.0.0.1:8080/api/v1/path/contents?irods_path=}
+      DRS_S3_ACCESS_ENDPOINT: ${DRS_S3_ACCESS_ENDPOINT:-http://127.0.0.1:9001}
+      DRS_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
+      DRS_OIDC_CLIENT_ID: ${DRS_API_CLIENT_ID:-irods-go-drs}
+      DRS_OIDC_CLIENT_SECRET: ${DRS_API_CLIENT_SECRET:-change-me}
+      DRS_OIDC_REALM: ${OIDC_REALM:-drs}
+      DRS_OIDC_SCOPE: ${OIDC_SCOPE:-openid profile email}
+      DRS_OIDC_INSECURE_SKIP_VERIFY: ${OIDC_INSECURE_SKIP_VERIFY:-true}
+    volumes:
+      - ./config/irods-go-drs/drs-config.yaml:/etc/irods-grid/drs-config.yaml:ro
+    ports:
+      - "${DRS_HOST_PORT:-8888}:8080"
+
+  irods-s3-api-provider:
+    image: ${IRODS_S3_API_IMAGE:-irods-s3-api-runner:latest}
+    depends_on:
+      irods-provider:
+        condition: service_started
+    command: ["/config/provider.json"]
+    volumes:
+      - ./config/s3/provider.json:/config/provider.json:ro
+      - ./state/shared-s3:/shared-s3
+    ports:
+      - "${S3_PROVIDER_HOST_PORT:-9001}:9000"
+
+  irods-s3-api-resource:
+    image: ${IRODS_S3_API_IMAGE:-irods-s3-api-runner:latest}
+    profiles: ["resource-server"]
+    depends_on:
+      irods-resource:
+        condition: service_started
+    command: ["/config/resource.json"]
+    volumes:
+      - ./config/s3/resource.json:/config/resource.json:ro
+      - ./state/shared-s3:/shared-s3
+    ports:
+      - "${S3_RESOURCE_HOST_PORT:-9002}:9000"
+
+volumes:
+  pgdata:
+  irods_provider_data:
+  irods_provider_etc:
+  irods_resource_data:
+  irods_resource_etc:
