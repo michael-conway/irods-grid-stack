@@ -38,6 +38,7 @@ IRODS_ADMIN_PASSWORD=rods
 IRODS_GO_REST_IMAGE=ghcr.io/michael-conway/irods-go-rest:latest
 IRODS_GO_DRS_IMAGE=ghcr.io/michael-conway/irods-go-drs:latest
 STARBASE_IMAGE=ghcr.io/michael-conway/starbase:develop
+TERMINAL_IMAGE=irods-grid-terminal:local
 IRODS_S3_API_IMAGE=irods-s3-api-runner:latest
 
 REST_PROVIDER_HOST_PORT=8080
@@ -70,6 +71,34 @@ If you change host ports in `.env`, also review the URLs in
 `config/irods-go-drs/drs-config.yaml`, especially `HttpsResourceAffinity` and
 `S3ResourceAffinity`. Those affinity arrays are structured config rather than
 simple scalar environment overrides.
+
+## Terminal Container
+
+The `terminal` service is an on-demand tools shell. It builds a local image with
+both `gocmd` and `drscmd` installed on `PATH`.
+
+Build it once:
+
+```bash
+docker compose build terminal
+```
+
+Open an interactive shell:
+
+```bash
+docker compose run --rm terminal
+```
+
+Run one-off commands:
+
+```bash
+docker compose run --rm terminal gocmd ls /tempZone/home
+docker compose run --rm terminal drscmd drsls /tempZone/home/rods
+```
+
+At startup, the entrypoint writes a standard iRODS environment for
+`irods-provider:1247` using the `TERMINAL_IRODS_*` values from `.env`. The
+default user is `rods` in `tempZone`.
 
 ## Current Defaults
 

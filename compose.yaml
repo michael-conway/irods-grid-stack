@@ -238,9 +238,42 @@ services:
     ports:
       - "${S3_RESOURCE_HOST_PORT:-9002}:9000"
 
+  terminal:
+    profiles: ["tools"]
+    build:
+      context: ./terminal
+      dockerfile: Dockerfile
+      args:
+        GOCOMMANDS_REF: ${TERMINAL_GOCOMMANDS_REF:-latest}
+        IRODS_GO_DRS_REF: ${TERMINAL_IRODS_GO_DRS_REF:-develop}
+    image: ${TERMINAL_IMAGE:-irods-grid-terminal:local}
+    depends_on:
+      irods-provider:
+        condition: service_started
+    environment:
+      TERM: ${TERMINAL_TERM:-xterm-256color}
+      TERMINAL_INIT_IRODS_ENV: ${TERMINAL_INIT_IRODS_ENV:-true}
+      TERMINAL_IRODS_HOST: irods-provider
+      TERMINAL_IRODS_PORT: 1247
+      TERMINAL_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
+      TERMINAL_IRODS_USER: ${TERMINAL_IRODS_USER:-rods}
+      TERMINAL_IRODS_PASSWORD: ${TERMINAL_IRODS_PASSWORD:-rods}
+      TERMINAL_IRODS_AUTH_SCHEME: ${TERMINAL_IRODS_AUTH_SCHEME:-native}
+      TERMINAL_IRODS_DEFAULT_RESOURCE: ${IRODS_PROVIDER_RESOURCE:-providerResc}
+      DRS_BASE_URL: http://irods-go-drs:8080
+      REST_BASE_URL: http://irods-go-rest-provider:8080
+    volumes:
+      - terminal_home:/home/terminal
+      - ./config:/grid-config:ro
+      - ./state/shared-s3:/shared-s3
+    stdin_open: true
+    tty: true
+    command: ["bash"]
+
 volumes:
   pgdata:
   irods_provider_data:
   irods_provider_etc:
   irods_resource_data:
   irods_resource_etc:
+  terminal_home:

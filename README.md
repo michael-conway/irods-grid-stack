@@ -20,6 +20,7 @@ wires the grid and service containers together.
 - `irods-go-drs` exposes DRS for the zone and advertises HTTPS/S3 access
   methods.
 - `keycloak` provides the current DRS realm configuration.
+- `terminal` is an on-demand shell with `gocmd` and `drscmd` on `PATH`.
 
 ## Current State
 
@@ -59,6 +60,7 @@ Runtime environment and config-file guidance starts in
 │   ├── resource-entrypoint.sh
 │   └── testsetup-consortium.sh
 ├── scripts/
+├── terminal/
 └── state/
 ```
 
@@ -76,6 +78,13 @@ Use targeted startup while the resource-server bootstrap is being finalized:
 ```bash
 docker compose up postgres irods-provider keycloak
 docker compose up irods-go-rest-provider starbase irods-go-drs
+```
+
+Open the CLI terminal:
+
+```bash
+docker compose build terminal
+docker compose run --rm terminal
 ```
 
 ## Default Host Ports

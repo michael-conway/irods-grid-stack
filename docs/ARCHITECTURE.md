@@ -32,6 +32,10 @@
              ┌───┴────┐
              │starbase│
              └────────┘
+
+             ┌────────┐
+             │terminal│
+             └────────┘
 ```
 
 ## iRODS
@@ -85,3 +89,10 @@ captures the desired config shape now so the application change can follow.
 Starbase runs from the published `ghcr.io/michael-conway/starbase` image and
 points at the provider REST instance by default. It enables S3 admin UI through
 runtime config.
+
+## Terminal
+
+The terminal service is an on-demand tools container with `gocmd` and `drscmd`
+on `PATH`. It is not part of the default long-running stack; use
+`docker compose run --rm terminal` to inspect or administer the grid from inside
+the compose network.
