@@ -1,9 +1,11 @@
 # iRODS Grid Stack
 
 Docker Compose workspace for running a local multi-server iRODS grid with REST, DRS, S3 and Starbase services around it.
+The grid is used for demo purposes and is not intended for production use. There is a frontend profile that can be used to 
+start REST, DRS and Starbase services alongside the grid for a full demo environment. Running without the frontend profile
+allows independent startup and debugging of the REST, DRS and Starbase services.
 
-This is not an application source repo. It is the integration environment that
-wires the grid and service containers together.
+A Terminal container is also provided to run the `gocmd` and `drscmd` commands.
 
 ## Target Topology
 

@@ -15,7 +15,7 @@
         "file_path": "/shared-s3-config/irods-s3-user-mapping.json"
       }
     },
-    "region": "tempzone-resource",
+    "region": "resourceResc",
     "multipart_upload_part_files_directory": "/tmp",
     "requests": {
       "threads": 3,

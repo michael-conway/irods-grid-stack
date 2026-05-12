@@ -69,12 +69,13 @@ stack can start only the backend iRODS/S3 services for development.
 
 The S3 API is deployed twice:
 
-- `irods-s3-api-provider`, host port `9001`, region `tempzone-provider`
-- `irods-s3-api-resource`, host port `9002`, region `tempzone-resource`
+- `irods-s3-api-provider`, host port `9001`, region `providerResc`
+- `irods-s3-api-resource`, host port `9002`, region `resourceResc`
 
 Both instances use the same shared bucket mapping JSON and the same shared user
-mapping JSON. This mirrors the desired AWS client shape: two endpoints/regions
-pointing at the same iRODS zone and mapping state. The provider endpoint
+mapping JSON. This mirrors the desired AWS client shape: two endpoints whose
+regions identify the backing iRODS resource while they share one iRODS zone and
+mapping state. The provider endpoint
 connects to `irods-provider` and uses `providerResc`; the resource endpoint
 connects to `irods-resource` and uses `resourceResc`.
 

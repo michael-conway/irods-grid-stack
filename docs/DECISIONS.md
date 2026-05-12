@@ -31,15 +31,16 @@ REST admin changes and S3 reads converge on one mapping state:
 - bucket mapping: `/shared-s3-config/irods-s3-bucket-mapping.json`
 - user mapping: `/shared-s3-config/irods-s3-user-mapping.json`
 
-## 5. Treat regions as endpoint identity
+## 5. Treat S3 regions as resource identity
 
-The provider and resource S3 API instances use different region names:
+The provider and resource S3 API instances use region names matching the iRODS
+resource behind each endpoint:
 
-- `tempzone-provider`
-- `tempzone-resource`
+- `providerResc`
+- `resourceResc`
 
-This makes AWS profile/client behavior explicit even though both endpoints
-present data from the same iRODS zone.
+This keeps AWS profile/client behavior aligned with DRS S3 access methods,
+where `region` represents the replica resource backing the object.
 
 The second S3 API instance connects to `irods-resource` and uses
 `resourceResc`. This keeps the endpoint topology ready for later S3

@@ -107,6 +107,9 @@ The default backend grid bootstraps `irods-provider` with `providerResc` and
 `irods-resource` as an iRODS consumer/resource server for the provider. The
 resource-server resource name defaults to `resourceResc`, and the compose health
 check uses the generated iRODS admin environment inside the resource container.
+The provider entrypoint starts iRODS through the iRODS Python controller so
+provider-side replica trim/replicate calls can authenticate with the resource
+server correctly.
 
 Frontend services are intentionally profiled:
 
@@ -142,7 +145,7 @@ Run one-off commands:
 
 ```bash
 docker compose run --rm terminal gocmd ls /tempZone/home
-docker compose run --rm terminal drscmd drsls /tempZone/home/rods
+docker compose run --rm terminal drscmd drsls /tempZone/home/test1
 ```
 
 At startup, the entrypoint writes a standard iRODS environment for

@@ -8,7 +8,8 @@ resource affinity. Defer final S3 resource-affinity decisions until
 design rather than just the configuration shape.
 
 The checked-in `S3ResourceAffinity` values are placeholders for that later
-verification pass.
+verification pass. The S3 API endpoint regions are already aligned with the
+backing iRODS resource names: `providerResc` and `resourceResc`.
 
 ## Health checks
 

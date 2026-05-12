@@ -1,2 +1,6 @@
-{}
-
+{
+  "test1": {
+    "secret_key": "6q-8dM76UICe0a-Hzkc1X~OdocGoaTlBvZgu6Fg5",
+    "username": "test1"
+  }
+}
