@@ -41,6 +41,7 @@ services:
       IRODS_DB_USER: ${IRODS_DB_USER:-irods}
       IRODS_DB_PASSWORD: ${IRODS_DB_PASSWORD:-testpassword}
       IRODS_HOSTNAME: irods-provider
+      IRODS_PROVIDER_RESOURCE: ${IRODS_PROVIDER_RESOURCE:-providerResc}
       IRODS_VAULT_DIR: /var/lib/irods/iRODS/Vault
     volumes:
       - irods_provider_data:/var/lib/irods
@@ -55,7 +56,6 @@ services:
   irods-resource:
     hostname: irods-resource
     platform: linux/amd64
-    profiles: ["resource-server"]
     build:
       context: ./irods
       dockerfile: Dockerfile.resource
@@ -70,6 +70,7 @@ services:
       IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
       IRODS_HOSTNAME: irods-resource
       IRODS_PROVIDER_HOST: irods-provider
+      IRODS_PROVIDER_RESOURCE: ${IRODS_PROVIDER_RESOURCE:-providerResc}
       IRODS_RESOURCE_NAME: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
       IRODS_VAULT_DIR: /var/lib/irods/iRODS/resourceVault
     volumes:
@@ -120,6 +121,7 @@ services:
 
   irods-go-rest-provider:
     image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    profiles: ["frontend"]
     depends_on:
       irods-provider:
         condition: service_started
@@ -148,7 +150,7 @@ services:
 
   irods-go-rest-resource:
     image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
-    profiles: ["resource-server"]
+    profiles: ["frontend"]
     depends_on:
       irods-resource:
         condition: service_healthy
@@ -177,6 +179,7 @@ services:
 
   starbase:
     image: ${STARBASE_IMAGE:-ghcr.io/michael-conway/starbase:develop}
+    profiles: ["frontend"]
     depends_on:
       irods-go-rest-provider:
         condition: service_started
@@ -187,6 +190,7 @@ services:
 
   irods-go-drs:
     image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:latest}
+    profiles: ["frontend"]
     depends_on:
       irods-provider:
         condition: service_started
@@ -216,6 +220,7 @@ services:
       DRS_OIDC_INSECURE_SKIP_VERIFY: ${OIDC_INSECURE_SKIP_VERIFY:-true}
     volumes:
       - ./config/irods-go-drs/drs-config.yaml:/etc/irods-grid/drs-config.yaml:ro
+      - ./config/irods-go-drs/service-info.json:/etc/irods-grid/service-info.json:ro
     ports:
       - "${DRS_HOST_PORT:-8888}:8080"
 
@@ -234,7 +239,6 @@ services:
 
   irods-s3-api-resource:
     image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
-    profiles: ["resource-server"]
     depends_on:
       irods-resource:
         condition: service_healthy

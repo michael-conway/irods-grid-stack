@@ -11,13 +11,14 @@ set -euo pipefail
 : "${IRODS_PRIMARY_TEST_PASSWORD:=test}"
 : "${IRODS_SECONDARY_TEST_USER:=test2}"
 : "${IRODS_SECONDARY_TEST_PASSWORD:=test}"
+: "${IRODS_PROVIDER_RESOURCE:=providerResc}"
 
 create_user() {
   local user_name="$1"
   local user_type="$2"
   local password="$3"
 
-  if ! iadmin lu "$user_name" >/dev/null 2>&1; then
+  if ! iadmin lu "$user_name" 2>/dev/null | awk -v name="$user_name" '$1 == "user_name:" && $2 == name { found = 1 } END { exit found ? 0 : 1 }'; then
     iadmin mkuser "$user_name" "$user_type"
   fi
   iadmin moduser "$user_name" password "$password"
@@ -28,7 +29,7 @@ create_resource() {
   local host="$2"
   local vault="$3"
 
-  if ! iadmin lr "$resource_name" >/dev/null 2>&1; then
+  if ! iadmin lr "$resource_name" 2>/dev/null | awk -v name="$resource_name" '$1 == "resc_name:" && $2 == name { found = 1 } END { exit found ? 0 : 1 }'; then
     iadmin mkresc "$resource_name" unixfilesystem "$host:$vault"
   fi
 }
@@ -39,7 +40,7 @@ create_user anonymous rodsuser anonymous
 iadmin atg public anonymous || true
 
 mkdir -p /var/lib/irods/iRODS/providerVault
-create_resource providerResc "$(hostname)" /var/lib/irods/iRODS/providerVault
+create_resource "$IRODS_PROVIDER_RESOURCE" "$(hostname)" /var/lib/irods/iRODS/providerVault
 
 # resourceResc is created by the consumer setup in resource-entrypoint.sh.
 

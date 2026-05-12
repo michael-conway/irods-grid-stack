@@ -1,7 +1,6 @@
 # iRODS Grid Stack
 
-Docker Compose workspace for running a local multi-server iRODS grid with the
-Gabble services around it.
+Docker Compose workspace for running a local multi-server iRODS grid with REST, DRS, S3 and Starbase services around it.
 
 This is not an application source repo. It is the integration environment that
 wires the grid and service containers together.
@@ -24,16 +23,19 @@ wires the grid and service containers together.
 
 ## Current State
 
-The provider and resource-server setup are owned locally under `./irods`. The
-resource server joins the provider as an iRODS 5 catalog consumer and registers
-`resourceResc` on `irods-resource`.
+The provider and resource server setup are owned locally under `./irods`. The
+provider post-setup registers `providerResc`, and the resource server joins the
+provider as an iRODS 5 catalog consumer and registers `resourceResc` on
+`irods-resource`.
 
 The iRODS S3 API services use `irods/irods_s3_api:latest` by default and share
 the bucket and user mapping files under `state/shared-s3/`.
 
 The `irods-go-rest`, `irods-go-drs`, and `starbase` services pull image names
 from `.env.example` defaults and can be retargeted with `IRODS_GO_REST_IMAGE`,
-`IRODS_GO_DRS_IMAGE`, and `STARBASE_IMAGE`.
+`IRODS_GO_DRS_IMAGE`, and `STARBASE_IMAGE`. REST, DRS, and Starbase are behind
+the `frontend` profile so the compose file can also run as a backend-only
+development grid with the provider and resource server.
 
 Runtime environment and config-file guidance starts in
 [config/RUNNING_GRID_STACK.md](config/RUNNING_GRID_STACK.md).
@@ -67,16 +69,14 @@ Runtime environment and config-file guidance starts in
 
 ```bash
 cp .env.example .env
-docker compose pull irods-go-rest-provider irods-go-drs starbase
-docker compose build irods-provider
-docker compose up
+docker compose --profile frontend config --quiet
+docker compose --profile frontend up -d --build
 ```
 
-Use targeted startup when you only need the provider-side services:
+Run a backend-only development grid by omitting the `frontend` profile:
 
 ```bash
-docker compose up postgres irods-provider keycloak
-docker compose up irods-go-rest-provider starbase irods-go-drs
+docker compose up -d --build
 ```
 
 Open the CLI terminal:

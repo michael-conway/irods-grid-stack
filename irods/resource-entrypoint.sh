@@ -8,6 +8,7 @@ IFS=$'\n\t'
 : "${IRODS_HOSTNAME:=irods-resource}"
 : "${IRODS_PROVIDER_HOST:=irods-provider}"
 : "${IRODS_PROVIDER_PORT:=1247}"
+: "${IRODS_PROVIDER_RESOURCE:=providerResc}"
 : "${IRODS_RESOURCE_NAME:=${IRODS_RESOURCE_RESOURCE:-resourceResc}}"
 : "${IRODS_VAULT_DIR:=/var/lib/irods/iRODS/resourceVault}"
 : "${IRODS_ZONE_KEY:=TEMPORARY_ZONE_KEY}"
@@ -102,7 +103,7 @@ EOF
 }
 
 write_provider_environment() {
-  write_client_environment "$PROVIDER_ENV" "$IRODS_PROVIDER_HOST" providerResc
+  write_client_environment "$PROVIDER_ENV" "$IRODS_PROVIDER_HOST" "$IRODS_PROVIDER_RESOURCE"
 }
 
 wait_for_provider() {

@@ -15,6 +15,7 @@ verification pass.
 Add health checks for:
 
 - provider iRODS readiness
-- REST `/api/v1/health`
-- DRS `/service-info`
+- provider REST `/healthz`
+- resource REST `/healthz`
+- DRS `/ga4gh/drs/v1/service-info`
 - S3 API list-buckets smoke check

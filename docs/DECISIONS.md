@@ -7,8 +7,9 @@ project avoids coupling application source trees to local orchestration state.
 
 ## 2. Use one iRODS zone with two iRODS servers
 
-`irods-provider` is the catalog provider. `irods-resource` joins as a separate
-server in the same zone and hosts `resourceResc`.
+`irods-provider` is the catalog provider and hosts `providerResc`.
+`irods-resource` joins as a separate server in the same zone and hosts
+`resourceResc`.
 
 This is better for testing than two independent zones because DRS, REST,
 Starbase, and the S3 API all exercise a single catalog with multiple physical
@@ -52,3 +53,10 @@ placement is tested meaningfully.
 DRS access URLs should be usable by clients outside Docker. Config files should
 therefore use `http://127.0.0.1:<port>` for public URLs and access URLs unless
 the caller is explicitly testing container-internal clients.
+
+## 7. Keep frontend/API services optional
+
+REST, DRS, and Starbase use the `frontend` compose profile. The provider,
+resource server, Keycloak, and S3 API endpoints are part of the default compose
+stack so `docker compose up` is useful as a backend-only development grid, while
+`docker compose --profile frontend up` starts the complete service stack.

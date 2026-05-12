@@ -40,8 +40,9 @@
 
 ## iRODS
 
-The provider is the catalog provider and owns the ICAT connection. The resource
-server joins the same zone as a separate iRODS server and registers a local
+The provider is the catalog provider and owns the ICAT connection. Provider
+post-setup registers `providerResc` on `irods-provider`. The resource server
+joins the same zone as a separate iRODS server and registers a local
 unixfilesystem resource hosted by `irods-resource`.
 
 Initial resource names:
@@ -60,6 +61,9 @@ Two REST instances are deliberate:
 
 Both REST instances use the same S3 bucket and user mapping files as the S3 API
 instances so REST-admin changes are visible to both S3 endpoints.
+
+Both REST services are in the `frontend` compose profile so the default compose
+stack can start only the backend iRODS/S3 services for development.
 
 ## S3
 
@@ -86,6 +90,10 @@ operations and advertises:
 - HTTPS access methods through the REST instances using resource affinity.
 - S3 access methods for bucket-marked collections.
 
+The DRS service is in the `frontend` compose profile. Its service-info sampler
+reads `config/irods-go-drs/service-info.json` from `/etc/irods-grid/` in the
+container.
+
 The current DRS code has an explicit TODO for S3 resource affinity. The stack
 keeps placeholder S3 affinity config, but final endpoint-selection behavior
 should be decided after the resource server is running and can verify the
@@ -95,7 +103,7 @@ design with real replica placement.
 
 Starbase runs from the published `ghcr.io/michael-conway/starbase` image and
 points at the provider REST instance by default. It enables S3 admin UI through
-runtime config.
+runtime config. It is in the `frontend` compose profile.
 
 ## Terminal
 

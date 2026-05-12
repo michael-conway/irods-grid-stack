@@ -3,7 +3,7 @@ DrsAvuUnit: irods:drs
 DrsLogLevel: info
 DrsListenPort: 8080
 ServiceInfoSampleIntervalMinutes: 5
-ServiceInfoFilePath: /tmp/service-info.json
+ServiceInfoFilePath: /etc/irods-grid/service-info.json
 
 IrodsHost: irods-provider
 IrodsPort: 1247

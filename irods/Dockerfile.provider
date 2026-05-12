@@ -28,8 +28,9 @@ RUN apt-get update && \
 
 # Copy entrypoint and test setup script
 COPY docker-entrypoint.sh /usr/local/sbin/docker-entrypoint.sh
+COPY provider-postsetup.sh /usr/local/sbin/provider-postsetup.sh
 COPY testsetup-consortium.sh /var/lib/irods/testsetup-consortium.sh
-RUN chmod +x /usr/local/sbin/docker-entrypoint.sh && \
+RUN chmod +x /usr/local/sbin/docker-entrypoint.sh /usr/local/sbin/provider-postsetup.sh && \
     chown irods:irods /var/lib/irods/testsetup-consortium.sh
 
 EXPOSE 1247 1248 20000-20199/tcp

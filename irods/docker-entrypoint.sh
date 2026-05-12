@@ -13,6 +13,7 @@ IFS=$'\n\t'
 : "${IRODS_DB_PASSWORD:=irods}"
 : "${IRODS_VAULT_DIR:=/var/lib/irods/iRODS/Vault}"
 : "${IRODS_HOSTNAME:=irods-provider}"
+: "${IRODS_PROVIDER_RESOURCE:=providerResc}"
 
 # Helper: wait for DB to be reachable
 wait_for_db() {
@@ -146,7 +147,7 @@ tail_logs() {
     "irods_port": 1247,
     "irods_user_name": "$IRODS_ADMIN_USER",
     "irods_zone_name": "$IRODS_ZONE",
-    "irods_default_resource": "demoResc",
+    "irods_default_resource": "$IRODS_PROVIDER_RESOURCE",
     "irods_client_server_policy": "CS_NEG_REFUSE",
     "irods_client_server_negotiation_key": "32_byte_server_negotiation_key__",
     "irods_encryption_algorithm": "AES-256-CBC",
@@ -210,7 +211,7 @@ if [ -f /etc/irods/server_config.json ]; then
     "irods_port": 1247,
     "irods_user_name": "$IRODS_ADMIN_USER",
     "irods_zone_name": "$IRODS_ZONE",
-    "irods_default_resource": "demoResc",
+    "irods_default_resource": "$IRODS_PROVIDER_RESOURCE",
     "irods_client_server_policy": "CS_NEG_REFUSE",
     "irods_client_server_negotiation_key": "32_byte_server_negotiation_key__",
     "irods_encryption_algorithm": "AES-256-CBC",
@@ -244,6 +245,8 @@ EOF
   # This ensures that even if test1 existed, other missing components are created.
   echo "Running testsetup-consortium.sh..."
   su - irods -c "IRODS_HOSTNAME=$IRODS_HOSTNAME /var/lib/irods/testsetup-consortium.sh"
+  echo "Running provider-postsetup.sh..."
+  su - irods -c "IRODS_HOSTNAME=$IRODS_HOSTNAME IRODS_PROVIDER_RESOURCE=$IRODS_PROVIDER_RESOURCE /usr/local/sbin/provider-postsetup.sh"
 
   tail_logs
   exit 0
@@ -263,7 +266,7 @@ cat > /var/lib/irods/.irods/irods_environment.json <<EOF
     "irods_port": 1247,
     "irods_user_name": "$IRODS_ADMIN_USER",
     "irods_zone_name": "$IRODS_ZONE",
-    "irods_default_resource": "demoResc",
+    "irods_default_resource": "$IRODS_PROVIDER_RESOURCE",
     "irods_client_server_policy": "CS_NEG_REFUSE",
     "irods_client_server_negotiation_key": "32_byte_server_negotiation_key__",
     "irods_encryption_algorithm": "AES-256-CBC",
@@ -279,7 +282,7 @@ cat > /tmp/irods_setup_answers.json <<EOF
 {
     "admin_password": "$IRODS_ADMIN_PASSWORD",
     "default_resource_directory": "$IRODS_VAULT_DIR",
-    "default_resource_name": "demoResc",
+    "default_resource_name": "$IRODS_PROVIDER_RESOURCE",
     "host_system_information": {
         "service_account_user_name": "irods",
         "service_account_group_name": "irods",
@@ -292,7 +295,7 @@ cat > /tmp/irods_setup_answers.json <<EOF
         "irods_cwd": "/$IRODS_ZONE/home/$IRODS_ADMIN_USER",
         "irods_default_hash_scheme": "SHA256",
         "irods_default_number_of_transfer_threads": 4,
-        "irods_default_resource": "demoResc",
+        "irods_default_resource": "$IRODS_PROVIDER_RESOURCE",
         "irods_encryption_algorithm": "AES-256-CBC",
         "irods_encryption_key_size": 32,
         "irods_encryption_num_hash_rounds": 16,
@@ -349,7 +352,7 @@ cat > /tmp/irods_setup_answers.json <<EOF
         "default_dir_mode": "0750",
         "default_file_mode": "0600",
         "default_hash_scheme": "SHA256",
-        "default_resource_name": "demoResc",
+        "default_resource_name": "$IRODS_PROVIDER_RESOURCE",
         "encryption": {
             "algorithm": "AES-256-CBC",
             "key_size": 32,
@@ -515,7 +518,7 @@ fi
     "irods_port": 1247,
     "irods_user_name": "$IRODS_ADMIN_USER",
     "irods_zone_name": "$IRODS_ZONE",
-    "irods_default_resource": "demoResc",
+    "irods_default_resource": "$IRODS_PROVIDER_RESOURCE",
     "irods_client_server_policy": "CS_NEG_REFUSE",
     "irods_client_server_negotiation_key": "32_byte_server_negotiation_key__",
     "irods_encryption_algorithm": "AES-256-CBC",
@@ -544,6 +547,8 @@ EOF
   chmod +x /var/lib/irods/testsetup-consortium.sh
   # Always run the script, as it is now idempotent and handles its own waiting.
   su - irods -c "IRODS_HOSTNAME=$IRODS_HOSTNAME /var/lib/irods/testsetup-consortium.sh"
+  echo "Running provider-postsetup.sh..."
+  su - irods -c "IRODS_HOSTNAME=$IRODS_HOSTNAME IRODS_PROVIDER_RESOURCE=$IRODS_PROVIDER_RESOURCE /usr/local/sbin/provider-postsetup.sh"
 
 echo "iRODS 5.x initialized. Tailing logs..."
 tail_logs

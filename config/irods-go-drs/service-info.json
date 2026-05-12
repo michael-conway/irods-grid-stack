@@ -1,0 +1,21 @@
+{
+  "id": "org.irods.grid-stack.drs",
+  "name": "iRODS Grid Stack DRS",
+  "description": "Local DRS service metadata for the iRODS grid stack.",
+  "organization": {
+    "name": "iRODS Grid Stack",
+    "url": "https://irods.org/"
+  },
+  "contactUrl": "https://irods.org/contact/",
+  "documentationUrl": "https://github.com/michael-conway/irods-go-drs",
+  "environment": "dev",
+  "version": "1.5.0",
+  "type": {
+    "group": "org.ga4gh",
+    "artifact": "drs",
+    "version": "1.5.0"
+  },
+  "drs": {
+    "maxBulkRequestLength": 1000
+  }
+}
