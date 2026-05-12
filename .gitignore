@@ -29,10 +29,5 @@ Thumbs.db
 state/*
 !state/shared-s3/
 state/shared-s3/*
+!state/shared-s3/irods-s3-bucket-mapping.json
 !state/shared-s3/irods-s3-user-mapping.json
-!state/shared-s3/provider/
-!state/shared-s3/resource/
-state/shared-s3/provider/*
-state/shared-s3/resource/*
-!state/shared-s3/provider/irods-s3-bucket-mapping.json
-!state/shared-s3/resource/irods-s3-bucket-mapping.json

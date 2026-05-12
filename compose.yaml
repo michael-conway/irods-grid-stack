@@ -27,6 +27,7 @@ services:
       context: ./irods
       dockerfile: Dockerfile.provider
     image: ${IRODS_PROVIDER_IMAGE:-irods-grid-provider:5.0.3-ubuntu-noble}
+    pull_policy: build
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,8 +52,6 @@ services:
     cap_add:
       - SYS_ADMIN
 
-  # Resource-server bootstrap is the first major implementation item in this
-  # skeleton. See docs/OPEN_ITEMS.md and irods/resource-entrypoint.sh.
   irods-resource:
     hostname: irods-resource
     platform: linux/amd64
@@ -61,6 +60,7 @@ services:
       context: ./irods
       dockerfile: Dockerfile.resource
     image: ${IRODS_RESOURCE_IMAGE:-irods-grid-resource:5.0.3-ubuntu-noble}
+    pull_policy: build
     depends_on:
       irods-provider:
         condition: service_started
@@ -70,7 +70,8 @@ services:
       IRODS_ADMIN_PASSWORD: ${IRODS_ADMIN_PASSWORD:-rods}
       IRODS_HOSTNAME: irods-resource
       IRODS_PROVIDER_HOST: irods-provider
-      IRODS_VAULT_DIR: /var/lib/irods/iRODS/Vault
+      IRODS_RESOURCE_NAME: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
+      IRODS_VAULT_DIR: /var/lib/irods/iRODS/resourceVault
     volumes:
       - irods_resource_data:/var/lib/irods
       - irods_resource_etc:/etc/irods
@@ -80,12 +81,20 @@ services:
       - "${IRODS_RESOURCE_DATA_PORT_RANGE:-20200-20399}:20000-20199"
     cap_add:
       - SYS_ADMIN
+    healthcheck:
+      test: ["CMD-SHELL", "IRODS_ENVIRONMENT_FILE=/root/.irods/irods_environment.json iadmin lr >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   keycloak:
     hostname: keycloak
-    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:latest}
     platform: linux/amd64
-    command: ["start-dev", "--import-realm"]
+    build:
+      context: ./config/keycloak
+      dockerfile: Dockerfile-keycloak
+    image: irods-grid-keycloak:latest
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME:-KEYCLOAK}
@@ -105,8 +114,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./config/keycloak/realm-drs.json:/opt/keycloak/data/import/realm-drs.json:ro
     ports:
       - "${KEYCLOAK_HTTPS_HOST_PORT:-8443}:8443"
       - "${KEYCLOAK_MANAGEMENT_HOST_PORT:-19090}:9000"
@@ -135,7 +142,7 @@ services:
       GOREST_OIDC_INSECURE_SKIP_VERIFY: ${OIDC_INSECURE_SKIP_VERIFY:-true}
     volumes:
       - ./config/irods-go-rest/provider.yaml:/etc/irods-grid/rest-provider.yaml:ro
-      - ./state/shared-s3:/shared-s3
+      - ./state/shared-s3:/shared-s3-config
     ports:
       - "${REST_PROVIDER_HOST_PORT:-8080}:8080"
 
@@ -144,7 +151,7 @@ services:
     profiles: ["resource-server"]
     depends_on:
       irods-resource:
-        condition: service_started
+        condition: service_healthy
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-resource.yaml
       GOREST_PUBLIC_URL: ${REST_RESOURCE_PUBLIC_URL:-http://127.0.0.1:8082}
@@ -164,7 +171,7 @@ services:
       GOREST_OIDC_INSECURE_SKIP_VERIFY: ${OIDC_INSECURE_SKIP_VERIFY:-true}
     volumes:
       - ./config/irods-go-rest/resource.yaml:/etc/irods-grid/rest-resource.yaml:ro
-      - ./state/shared-s3:/shared-s3
+      - ./state/shared-s3:/shared-s3-config
     ports:
       - "${REST_RESOURCE_HOST_PORT:-8082}:8080"
 
@@ -201,7 +208,6 @@ services:
       DRS_IRODS_ACCESS_HOST: ${DRS_IRODS_ACCESS_HOST:-127.0.0.1}
       DRS_IRODS_ACCESS_PORT: ${IRODS_PROVIDER_HOST_PORT:-1247}
       DRS_HTTPS_ACCESS_METHOD_BASE_URL: ${DRS_HTTPS_ACCESS_METHOD_BASE_URL:-http://127.0.0.1:8080/api/v1/path/contents?irods_path=}
-      DRS_S3_ACCESS_ENDPOINT: ${DRS_S3_ACCESS_ENDPOINT:-http://127.0.0.1:9001}
       DRS_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
       DRS_OIDC_CLIENT_ID: ${DRS_API_CLIENT_ID:-irods-go-drs}
       DRS_OIDC_CLIENT_SECRET: ${DRS_API_CLIENT_SECRET:-change-me}
@@ -214,29 +220,31 @@ services:
       - "${DRS_HOST_PORT:-8888}:8080"
 
   irods-s3-api-provider:
-    image: ${IRODS_S3_API_IMAGE:-irods-s3-api-runner:latest}
+    image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
     depends_on:
       irods-provider:
         condition: service_started
-    command: ["/config/provider.json"]
     volumes:
-      - ./config/s3/provider.json:/config/provider.json:ro
-      - ./state/shared-s3:/shared-s3
+      - ./config/s3/irods-s3-api-entrypoint.sh:/irods-s3-api-entrypoint.sh:ro
+      - ./config/s3/provider.json:/config-template.json:ro
+      - ./state/shared-s3:/shared-s3-config
     ports:
       - "${S3_PROVIDER_HOST_PORT:-9001}:9000"
+    entrypoint: ["/bin/sh", "/irods-s3-api-entrypoint.sh"]
 
   irods-s3-api-resource:
-    image: ${IRODS_S3_API_IMAGE:-irods-s3-api-runner:latest}
+    image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
     profiles: ["resource-server"]
     depends_on:
       irods-resource:
-        condition: service_started
-    command: ["/config/resource.json"]
+        condition: service_healthy
     volumes:
-      - ./config/s3/resource.json:/config/resource.json:ro
-      - ./state/shared-s3:/shared-s3
+      - ./config/s3/irods-s3-api-entrypoint.sh:/irods-s3-api-entrypoint.sh:ro
+      - ./config/s3/resource.json:/config-template.json:ro
+      - ./state/shared-s3:/shared-s3-config
     ports:
       - "${S3_RESOURCE_HOST_PORT:-9002}:9000"
+    entrypoint: ["/bin/sh", "/irods-s3-api-entrypoint.sh"]
 
   terminal:
     profiles: ["tools"]
@@ -265,7 +273,7 @@ services:
     volumes:
       - terminal_home:/home/terminal
       - ./config:/grid-config:ro
-      - ./state/shared-s3:/shared-s3
+      - ./state/shared-s3:/shared-s3-config
     stdin_open: true
     tty: true
     command: ["bash"]

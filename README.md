@@ -15,8 +15,8 @@ wires the grid and service containers together.
 - `irods-go-rest-provider` connects to the provider host.
 - `irods-go-rest-resource` connects to the resource host.
 - `starbase` points at the provider-side REST API by default.
-- `irods-s3-api-provider` exposes S3 access for provider-hosted bucket mappings.
-- `irods-s3-api-resource` exposes S3 access for resource-hosted bucket mappings.
+- `irods-s3-api-provider` exposes S3 access on host port `9001`.
+- `irods-s3-api-resource` exposes a second S3 endpoint on host port `9002`.
 - `irods-go-drs` exposes DRS for the zone and advertises HTTPS/S3 access
   methods.
 - `keycloak` provides the current DRS realm configuration.
@@ -24,13 +24,12 @@ wires the grid and service containers together.
 
 ## Current State
 
-This is a skeleton project for capturing decisions and iterating toward a
-fully bootable stack. The provider setup is owned locally under `./irods`. The
-resource-server join flow is represented as a first-class script but still
-needs live validation against the selected iRODS 5 package behavior.
+The provider and resource-server setup are owned locally under `./irods`. The
+resource server joins the provider as an iRODS 5 catalog consumer and registers
+`resourceResc` on `irods-resource`.
 
-The iRODS S3 API services assume a locally available runner image named
-`irods-s3-api-runner:latest`. See `docs/OPEN_ITEMS.md`.
+The iRODS S3 API services use `irods/irods_s3_api:latest` by default and share
+the bucket and user mapping files under `state/shared-s3/`.
 
 The `irods-go-rest`, `irods-go-drs`, and `starbase` services pull image names
 from `.env.example` defaults and can be retargeted with `IRODS_GO_REST_IMAGE`,
@@ -73,7 +72,7 @@ docker compose build irods-provider
 docker compose up
 ```
 
-Use targeted startup while the resource-server bootstrap is being finalized:
+Use targeted startup when you only need the provider-side services:
 
 ```bash
 docker compose up postgres irods-provider keycloak

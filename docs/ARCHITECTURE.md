@@ -41,9 +41,8 @@
 ## iRODS
 
 The provider is the catalog provider and owns the ICAT connection. The resource
-server joins the same zone as a separate iRODS server. The provider setup script
-creates local provider resources and registers a remote unixfilesystem resource
-hosted by `irods-resource`.
+server joins the same zone as a separate iRODS server and registers a local
+unixfilesystem resource hosted by `irods-resource`.
 
 Initial resource names:
 
@@ -59,8 +58,8 @@ Two REST instances are deliberate:
 - Resource REST validates direct API behavior when the API is colocated with a
   resource host.
 
-Both share the same S3 user mapping file. Each has its own bucket mapping file
-so the provider and resource S3 API instances can be tested independently.
+Both REST instances use the same S3 bucket and user mapping files as the S3 API
+instances so REST-admin changes are visible to both S3 endpoints.
 
 ## S3
 
@@ -69,9 +68,15 @@ The S3 API is deployed twice:
 - `irods-s3-api-provider`, host port `9001`, region `tempzone-provider`
 - `irods-s3-api-resource`, host port `9002`, region `tempzone-resource`
 
-Both instances share user credentials but use separate bucket mapping JSON
-files. This mirrors the desired AWS client shape: two endpoints/regions
-pointing at the same iRODS zone.
+Both instances use the same shared bucket mapping JSON and the same shared user
+mapping JSON. This mirrors the desired AWS client shape: two endpoints/regions
+pointing at the same iRODS zone and mapping state. The provider endpoint
+connects to `irods-provider` and uses `providerResc`; the resource endpoint
+connects to `irods-resource` and uses `resourceResc`.
+
+Final DRS S3 resource-affinity behavior is intentionally deferred until
+live `resourceResc` replica-placement tests verify how DRS should choose
+provider/resource S3 endpoint metadata.
 
 ## DRS
 
@@ -82,7 +87,9 @@ operations and advertises:
 - S3 access methods for bucket-marked collections.
 
 The current DRS code has an explicit TODO for S3 resource affinity. The stack
-captures the desired config shape now so the application change can follow.
+keeps placeholder S3 affinity config, but final endpoint-selection behavior
+should be decided after the resource server is running and can verify the
+design with real replica placement.
 
 ## Starbase
 

@@ -41,8 +41,6 @@ iadmin atg public anonymous || true
 mkdir -p /var/lib/irods/iRODS/providerVault
 create_resource providerResc "$(hostname)" /var/lib/irods/iRODS/providerVault
 
-# Enable after irods-resource bootstrap is validated.
-# create_resource resourceResc irods-resource /var/lib/irods/iRODS/resourceVault
+# resourceResc is created by the consumer setup in resource-entrypoint.sh.
 
 echo "Provider post-setup complete for zone $IRODS_ZONE."
-

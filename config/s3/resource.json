@@ -4,15 +4,15 @@
     "port": 9000,
     "log_level": "info",
     "bucket_mapping": {
-      "plugin_path": "/usr/lib/irods_s3_api/plugins/bucket_mapping/libirods_s3_api_plugin-bucket_mapping-local_file.so",
+      "plugin_path": "__BUCKET_MAPPING_PLUGIN__",
       "configuration": {
-        "file_path": "/shared-s3/resource/irods-s3-bucket-mapping.json"
+        "file_path": "/shared-s3-config/irods-s3-bucket-mapping.json"
       }
     },
     "user_mapping": {
-      "plugin_path": "/usr/lib/irods_s3_api/plugins/user_mapping/libirods_s3_api_plugin-user_mapping-local_file.so",
+      "plugin_path": "__USER_MAPPING_PLUGIN__",
       "configuration": {
-        "file_path": "/shared-s3/irods-s3-user-mapping.json"
+        "file_path": "/shared-s3-config/irods-s3-user-mapping.json"
       }
     },
     "region": "tempzone-resource",
@@ -56,4 +56,3 @@
     "get_object_buffer_size_in_bytes": 8192
   }
 }
-

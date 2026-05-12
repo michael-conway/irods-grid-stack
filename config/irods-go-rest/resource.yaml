@@ -24,8 +24,8 @@ IrodsSSLConfig:
 IrodsDefaultResource: resourceResc
 
 S3ApiSupported: true
-S3BucketMappingFile: /shared-s3/resource/irods-s3-bucket-mapping.json
-S3UserMappingFile: /shared-s3/irods-s3-user-mapping.json
+S3BucketMappingFile: /shared-s3-config/irods-s3-bucket-mapping.json
+S3UserMappingFile: /shared-s3-config/irods-s3-user-mapping.json
 
 ReplicaTrimMinCopies: 1
 ReplicaTrimMinAgeMinutes: 0
@@ -39,4 +39,3 @@ OidcClientSecretFile:
 OidcInsecureSkipVerify: true
 OidcRealm: drs
 OidcScope: openid profile email
-

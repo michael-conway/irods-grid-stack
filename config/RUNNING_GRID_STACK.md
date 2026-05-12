@@ -14,7 +14,8 @@ docker compose up postgres irods-provider keycloak
 docker compose up irods-go-rest-provider starbase irods-go-drs
 ```
 
-The resource-server profile is still under validation:
+Start the resource-server profile when you need `irods-resource`,
+resource-side REST, and the second S3 endpoint:
 
 ```bash
 docker compose --profile resource-server up
@@ -39,7 +40,7 @@ IRODS_GO_REST_IMAGE=ghcr.io/michael-conway/irods-go-rest:latest
 IRODS_GO_DRS_IMAGE=ghcr.io/michael-conway/irods-go-drs:latest
 STARBASE_IMAGE=ghcr.io/michael-conway/starbase:develop
 TERMINAL_IMAGE=irods-grid-terminal:local
-IRODS_S3_API_IMAGE=irods-s3-api-runner:latest
+IRODS_S3_API_IMAGE=irods/irods_s3_api:latest
 
 REST_PROVIDER_HOST_PORT=8080
 STARBASE_HOST_PORT=8081
@@ -63,14 +64,19 @@ These files are intentionally checked in as runnable defaults:
 | `config/irods-go-rest/resource.yaml` | Resource-side REST defaults used with the `resource-server` profile. |
 | `config/irods-go-drs/drs-config.yaml` | DRS defaults, access-method settings, and resource affinity maps. Compose overrides credentials and core OIDC values from `.env`. |
 | `config/keycloak/realm-drs.json` | Keycloak realm import. Client IDs and secrets are substituted from Keycloak environment variables. |
-| `config/s3/provider.json` | Provider-side iRODS S3 API defaults. |
-| `config/s3/resource.json` | Resource-side iRODS S3 API defaults used with the `resource-server` profile. |
+| `config/s3/provider.json` | Provider-side iRODS S3 API config template. |
+| `config/s3/resource.json` | Resource-side iRODS S3 API config template for the `9002` endpoint. |
 | `config/starbase/starbase.yaml` | Starbase runtime UI config. |
+
+Both S3 API instances mount `state/shared-s3/` at `/shared-s3-config` and use
+the same `irods-s3-bucket-mapping.json` and `irods-s3-user-mapping.json` files.
 
 If you change host ports in `.env`, also review the URLs in
 `config/irods-go-drs/drs-config.yaml`, especially `HttpsResourceAffinity` and
 `S3ResourceAffinity`. Those affinity arrays are structured config rather than
-simple scalar environment overrides.
+simple scalar environment overrides. Treat `S3ResourceAffinity` as placeholder
+shape until live `resourceResc` replica-placement tests confirm the S3 endpoint
+selection design.
 
 ## Terminal Container
 
