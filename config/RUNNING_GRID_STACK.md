@@ -100,8 +100,10 @@ These files are intentionally checked in as runnable defaults:
 Both S3 API instances mount `state/shared-s3/` at `/shared-s3-config` and use
 the same `irods-s3-bucket-mapping.json` and `irods-s3-user-mapping.json` files.
 The provider instance maps to host port `9001`; the resource instance maps to
-host port `9002`. The resource-side S3 API waits for `irods-resource` to become
-healthy before starting.
+host port `9002`. The provider S3 API region is `providerResc`, and the
+resource-server S3 API region is `resourceResc`, matching the iRODS resource
+behind each endpoint. The resource-side S3 API waits for `irods-resource` to
+become healthy before starting.
 
 The default backend grid bootstraps `irods-provider` with `providerResc` and
 `irods-resource` as an iRODS consumer/resource server for the provider. The
@@ -165,6 +167,56 @@ Default public endpoints:
 | Keycloak | `https://127.0.0.1:8443` |
 | Provider S3 API | `http://127.0.0.1:9001` |
 | Resource S3 API | `http://127.0.0.1:9002` |
+
+## AWS S3 Profiles
+
+The S3 API uses the shared user mapping in
+`state/shared-s3/irods-s3-user-mapping.json`. With the current local `test1`
+mapping, these AWS CLI files connect to the provider-backed and resource-backed
+S3 API endpoints.
+
+`~/.aws/config`:
+
+```ini
+[profile irods-grid-provider-s3]
+region = providerResc
+output = json
+endpoint_url = http://127.0.0.1:9001
+s3 =
+    addressing_style = path
+
+[profile irods-grid-resource-s3]
+region = resourceResc
+output = json
+endpoint_url = http://127.0.0.1:9002
+s3 =
+    addressing_style = path
+```
+
+`~/.aws/credentials`:
+
+```ini
+[irods-grid-provider-s3]
+aws_access_key_id = test1
+aws_secret_access_key = 6q-8dM76UICe0a-Hzkc1X~OdocGoaTlBvZgu6Fg5
+
+[irods-grid-resource-s3]
+aws_access_key_id = test1
+aws_secret_access_key = 6q-8dM76UICe0a-Hzkc1X~OdocGoaTlBvZgu6Fg5
+```
+
+Example checks:
+
+```bash
+aws --profile irods-grid-provider-s3 s3api list-buckets
+aws --profile irods-grid-provider-s3 s3api list-objects-v2 --bucket testdrssingle
+aws --profile irods-grid-resource-s3 s3api list-buckets
+aws --profile irods-grid-resource-s3 s3api list-objects-v2 --bucket testdrssingle
+```
+
+If your AWS CLI version does not honor `endpoint_url` from the profile, pass
+`--endpoint-url http://127.0.0.1:9001` or
+`--endpoint-url http://127.0.0.1:9002` on the command line.
 
 Default internal service names used by config files:
 

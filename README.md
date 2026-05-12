@@ -31,7 +31,9 @@ provider as an iRODS 5 catalog consumer and registers `resourceResc` on
 `irods-resource`.
 
 The iRODS S3 API services use `irods/irods_s3_api:latest` by default and share
-the bucket and user mapping files under `state/shared-s3/`.
+the bucket and user mapping files under `state/shared-s3/`. The provider S3 API
+uses region `providerResc`; the resource-server S3 API uses region
+`resourceResc`.
 
 The `irods-go-rest`, `irods-go-drs`, and `starbase` services pull image names
 from `.env.example` defaults and can be retargeted with `IRODS_GO_REST_IMAGE`,
