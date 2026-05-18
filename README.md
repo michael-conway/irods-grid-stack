@@ -15,7 +15,8 @@ A Terminal container is also provided to run the `gocmd` and `drscmd` commands.
   as a resource host.
 - `irods-go-rest-provider` connects to the provider host.
 - `irods-go-rest-resource` connects to the resource host.
-- `starbase` points at the provider-side REST API by default.
+- `starbase` points at the provider-side REST API by default through
+  `STARBASE_REST_API_BASE_URL`, aligned with `REST_PROVIDER_PUBLIC_URL`.
 - `irods-s3-api-provider` exposes S3 access on host port `9001`.
 - `irods-s3-api-resource` exposes a second S3 endpoint on host port `9002`.
 - `irods-go-drs` exposes DRS for the zone and advertises HTTPS/S3 access
@@ -40,6 +41,12 @@ from `.env.example` defaults and can be retargeted with `IRODS_GO_REST_IMAGE`,
 `IRODS_GO_DRS_IMAGE`, and `STARBASE_IMAGE`. REST, DRS, and Starbase are behind
 the `frontend` profile so the compose file can also run as a backend-only
 development grid with the provider and resource server.
+
+Starbase is served from its own host port and calls provider REST from the
+browser. Set `STARBASE_REST_API_BASE_URL` to the browser-facing provider REST
+URL and keep `REST_CORS_ALLOWED_ORIGINS` aligned with the Starbase browser
+origins. Compose passes `REST_CORS_ALLOWED_ORIGINS` through to both REST
+instances as `GOREST_CORS_ALLOWED_ORIGINS`.
 
 Runtime environment and config-file guidance starts in
 [config/RUNNING_GRID_STACK.md](config/RUNNING_GRID_STACK.md).
@@ -101,6 +108,15 @@ docker compose run --rm terminal
 - Keycloak: `8443`
 - Provider S3 API: `9001`
 - Resource S3 API: `9002`
+
+## Tips
+
+If network errors occur, check for stale containers. A targeted recreate often clears up network issues in the development environment.
+
+```aiignore
+docker compose --profile frontend down --remove-orphans
+docker compose --profile frontend up -d --build
+```
 
 ## Decision Records
 

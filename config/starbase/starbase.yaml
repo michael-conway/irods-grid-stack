@@ -1,5 +1,8 @@
+# Reference config shape. Compose generates the active container config from
+# STARBASE_* environment variables in config/starbase/starbase-entrypoint.sh.
 Title: Starbase
 Subtitle: iRODS Grid Stack
+RestAPIBaseURL: http://127.0.0.1:8080
 S3AdminEnabled: true
 
 AuthMode:
@@ -7,4 +10,3 @@ AuthMode:
     AuthName: iRODS native
   - Mode: pam
     AuthName: iRODS PAM
-

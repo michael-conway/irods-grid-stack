@@ -103,8 +103,19 @@ design with real replica placement.
 ## Starbase
 
 Starbase runs from the published `ghcr.io/michael-conway/starbase` image and
-points at the provider REST instance by default. It enables S3 admin UI through
-runtime config. It is in the `frontend` compose profile.
+points at the provider REST instance by default through the
+`STARBASE_REST_API_BASE_URL` environment variable. The Starbase container
+generates `/var/www/starbase/config/starbase.yaml` at startup and writes that
+value as `RestAPIBaseURL`. The URL must be browser-facing, so the default is
+`http://127.0.0.1:8080` rather than the Docker-internal
+`irods-go-rest-provider:8080` service name. Starbase enables S3 admin UI
+through the same generated runtime config. It is in the `frontend` compose
+profile.
+
+Because Starbase and REST are separate browser origins in this local stack,
+both REST services receive `GOREST_CORS_ALLOWED_ORIGINS` from
+`REST_CORS_ALLOWED_ORIGINS`. The default allows `http://localhost:8081` and
+`http://127.0.0.1:8081`, matching the default Starbase host port.
 
 ## Terminal
 

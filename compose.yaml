@@ -120,7 +120,7 @@ services:
       - "${KEYCLOAK_MANAGEMENT_HOST_PORT:-19090}:9000"
 
   irods-go-rest-provider:
-    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:develop}
     profiles: ["frontend"]
     depends_on:
       irods-provider:
@@ -128,6 +128,7 @@ services:
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-provider.yaml
       GOREST_PUBLIC_URL: ${REST_PROVIDER_PUBLIC_URL:-http://127.0.0.1:8080}
+      GOREST_CORS_ALLOWED_ORIGINS: ${REST_CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
       GOREST_IRODS_HOST: irods-provider
       GOREST_IRODS_PORT: 1247
       GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
@@ -149,7 +150,7 @@ services:
       - "${REST_PROVIDER_HOST_PORT:-8080}:8080"
 
   irods-go-rest-resource:
-    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:develop}
     profiles: ["frontend"]
     depends_on:
       irods-resource:
@@ -157,6 +158,7 @@ services:
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-resource.yaml
       GOREST_PUBLIC_URL: ${REST_RESOURCE_PUBLIC_URL:-http://127.0.0.1:8082}
+      GOREST_CORS_ALLOWED_ORIGINS: ${REST_CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
       GOREST_IRODS_HOST: irods-resource
       GOREST_IRODS_PORT: 1247
       GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
@@ -183,13 +185,19 @@ services:
     depends_on:
       irods-go-rest-provider:
         condition: service_started
+    environment:
+      STARBASE_TITLE: ${STARBASE_TITLE:-Starbase}
+      STARBASE_SUBTITLE: ${STARBASE_SUBTITLE:-iRODS Grid Stack}
+      STARBASE_REST_API_BASE_URL: ${STARBASE_REST_API_BASE_URL:-${REST_PROVIDER_PUBLIC_URL:-http://127.0.0.1:8080}}
+      STARBASE_S3_ADMIN_ENABLED: ${STARBASE_S3_ADMIN_ENABLED:-true}
     volumes:
-      - ./config/starbase/starbase.yaml:/var/www/starbase/config/starbase.yaml:ro
+      - ./config/starbase/starbase-entrypoint.sh:/etc/irods-grid/starbase-entrypoint.sh:ro
+    command: ["/bin/sh", "/etc/irods-grid/starbase-entrypoint.sh"]
     ports:
       - "${STARBASE_HOST_PORT:-8081}:8080"
 
   irods-go-drs:
-    image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:latest}
+    image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:develop}
     profiles: ["frontend"]
     depends_on:
       irods-provider:
