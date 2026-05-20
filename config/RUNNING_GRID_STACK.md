@@ -8,7 +8,8 @@ defaults for REST, DRS, Keycloak, Starbase, and S3.
 
 The default backend grid starts the provider, resource server, Keycloak, and
 both S3 API endpoints. The `frontend` profile adds provider REST, resource REST,
-DRS, and Starbase.
+DRS, and Starbase. The individual `rest`, `drs`, and `starbase` profiles can be
+used when only one frontend/API layer is needed.
 
 ```bash
 cp .env.example .env
@@ -26,6 +27,15 @@ For a backend-only development grid, omit the `frontend` profile:
 
 ```bash
 docker compose up -d --build
+```
+
+For targeted service layers, enable only the relevant profiles:
+
+```bash
+docker compose --profile rest up -d --build
+docker compose --profile drs up -d --build
+docker compose --profile starbase up -d --build
+docker compose --profile rest --profile starbase up -d --build
 ```
 
 To stop and restart the full stack without deleting persisted database/iRODS
@@ -71,7 +81,7 @@ REST_PROVIDER_PUBLIC_URL=http://127.0.0.1:8080
 REST_RESOURCE_PUBLIC_URL=http://127.0.0.1:8082
 STARBASE_REST_API_BASE_URL=http://127.0.0.1:8080
 # Forwarded to irods-go-rest as GOREST_CORS_ALLOWED_ORIGINS.
-REST_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081
+REST_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173
 
 DRS_API_CLIENT_SECRET=change-me
 IRODS_REST_WEB_CLIENT_SECRET=change-me
@@ -120,11 +130,21 @@ The provider entrypoint starts iRODS through the iRODS Python controller so
 provider-side replica trim/replicate calls can authenticate with the resource
 server correctly.
 
-Frontend services are intentionally profiled:
+Compose profiles are intentionally layered:
 
 | Profile | Services |
 | --- | --- |
+| default / no profile | `postgres`, `irods-provider`, `irods-resource`, `keycloak`, `irods-s3-api-provider`, `irods-s3-api-resource` |
+| `rest` | `irods-go-rest-provider`, `irods-go-rest-resource` |
+| `drs` | `irods-go-drs` |
+| `starbase` | `starbase` |
 | `frontend` | `irods-go-rest-provider`, `irods-go-rest-resource`, `irods-go-drs`, `starbase` |
+| `tools` | `terminal` |
+
+`starbase` can start by itself because it is a static frontend, but it still
+expects the URL in `STARBASE_REST_API_BASE_URL` to be reachable from the
+browser. For the local stack, use `--profile rest --profile starbase` when you
+want Compose to start provider REST with Starbase.
 
 If you change host ports in `.env`, also review the URLs in
 `config/irods-go-drs/drs-config.yaml`, especially `HttpsResourceAffinity` and
@@ -187,7 +207,8 @@ served from on the host; it does not change the REST API endpoint Starbase calls
 Because Starbase and REST run on different host ports, provider and resource
 REST also receive `GOREST_CORS_ALLOWED_ORIGINS` from
 `REST_CORS_ALLOWED_ORIGINS`. The default includes both `localhost:8081` and
-`127.0.0.1:8081` so either browser URL works.
+`127.0.0.1:8081` for containerized Starbase, plus `localhost:5173` and
+`127.0.0.1:5173` for the Vite dev server.
 
 ## AWS S3 Profiles
 

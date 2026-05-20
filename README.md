@@ -1,9 +1,11 @@
 # iRODS Grid Stack
 
 Docker Compose workspace for running a local multi-server iRODS grid with REST, DRS, S3 and Starbase services around it.
-The grid is used for demo purposes and is not intended for production use. There is a frontend profile that can be used to 
-start REST, DRS and Starbase services alongside the grid for a full demo environment. Running without the frontend profile
-allows independent startup and debugging of the REST, DRS and Starbase services.
+The grid is used for demo purposes and is not intended for production use. The
+default Compose stack starts the base services: iRODS provider, iRODS resource
+server, Keycloak, and both S3 API endpoints. The `frontend` profile starts REST,
+DRS, and Starbase together, while the `rest`, `drs`, and `starbase` profiles can
+be used independently during development.
 
 A Terminal container is also provided to run the `gocmd` and `drscmd` commands.
 
@@ -39,14 +41,16 @@ uses region `providerResc`; the resource-server S3 API uses region
 The `irods-go-rest`, `irods-go-drs`, and `starbase` services pull image names
 from `.env.example` defaults and can be retargeted with `IRODS_GO_REST_IMAGE`,
 `IRODS_GO_DRS_IMAGE`, and `STARBASE_IMAGE`. REST, DRS, and Starbase are behind
-the `frontend` profile so the compose file can also run as a backend-only
-development grid with the provider and resource server.
+optional profiles so the compose file can also run as a backend-only
+development grid.
 
 Starbase is served from its own host port and calls provider REST from the
 browser. Set `STARBASE_REST_API_BASE_URL` to the browser-facing provider REST
 URL and keep `REST_CORS_ALLOWED_ORIGINS` aligned with the Starbase browser
 origins. Compose passes `REST_CORS_ALLOWED_ORIGINS` through to both REST
-instances as `GOREST_CORS_ALLOWED_ORIGINS`.
+instances as `GOREST_CORS_ALLOWED_ORIGINS`. The default includes the
+containerized Starbase origin on port `8081` and the Vite dev server origin on
+port `5173`, for both `localhost` and `127.0.0.1`.
 
 Runtime environment and config-file guidance starts in
 [config/RUNNING_GRID_STACK.md](config/RUNNING_GRID_STACK.md).
@@ -83,6 +87,19 @@ cp .env.example .env
 docker compose --profile frontend config --quiet
 docker compose --profile frontend up -d --build
 ```
+
+Start only one frontend/API layer when needed:
+
+```bash
+docker compose --profile rest up -d --build
+docker compose --profile drs up -d --build
+docker compose --profile starbase up -d --build
+docker compose --profile rest --profile starbase up -d --build
+```
+
+`starbase` can point at any browser-reachable REST URL through
+`STARBASE_REST_API_BASE_URL`. Use `--profile rest --profile starbase` for the
+usual local Starbase plus provider REST pairing.
 
 Run a backend-only development grid by omitting the `frontend` profile:
 

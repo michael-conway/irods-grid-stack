@@ -62,8 +62,9 @@ Two REST instances are deliberate:
 Both REST instances use the same S3 bucket and user mapping files as the S3 API
 instances so REST-admin changes are visible to both S3 endpoints.
 
-Both REST services are in the `frontend` compose profile so the default compose
-stack can start only the backend iRODS/S3 services for development.
+Both REST services are in the `rest` and `frontend` compose profiles so the
+default compose stack can start only the backend iRODS/S3 services for
+development.
 
 ## S3
 
@@ -91,9 +92,9 @@ operations and advertises:
 - HTTPS access methods through the REST instances using resource affinity.
 - S3 access methods for bucket-marked collections.
 
-The DRS service is in the `frontend` compose profile. Its service-info sampler
-reads `config/irods-go-drs/service-info.json` from `/etc/irods-grid/` in the
-container.
+The DRS service is in the `drs` and `frontend` compose profiles. Its
+service-info sampler reads `config/irods-go-drs/service-info.json` from
+`/etc/irods-grid/` in the container.
 
 The current DRS code has an explicit TODO for S3 resource affinity. The stack
 keeps placeholder S3 affinity config, but final endpoint-selection behavior
@@ -109,13 +110,20 @@ generates `/var/www/starbase/config/starbase.yaml` at startup and writes that
 value as `RestAPIBaseURL`. The URL must be browser-facing, so the default is
 `http://127.0.0.1:8080` rather than the Docker-internal
 `irods-go-rest-provider:8080` service name. Starbase enables S3 admin UI
-through the same generated runtime config. It is in the `frontend` compose
-profile.
+through the same generated runtime config. It is in the `starbase` and
+`frontend` compose profiles.
 
 Because Starbase and REST are separate browser origins in this local stack,
 both REST services receive `GOREST_CORS_ALLOWED_ORIGINS` from
 `REST_CORS_ALLOWED_ORIGINS`. The default allows `http://localhost:8081` and
-`http://127.0.0.1:8081`, matching the default Starbase host port.
+`http://127.0.0.1:8081`, matching the default Starbase host port, and
+`http://localhost:5173` plus `http://127.0.0.1:5173` for local Vite
+development.
+
+The Starbase container does not have a Compose dependency on REST. It can be
+started alone and pointed at an externally running REST service. The aggregate
+`frontend` profile and the combined `rest` plus `starbase` profiles start the
+usual local pairing.
 
 ## Terminal
 

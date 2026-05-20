@@ -121,14 +121,14 @@ services:
 
   irods-go-rest-provider:
     image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:develop}
-    profiles: ["frontend"]
+    profiles: ["frontend", "rest"]
     depends_on:
       irods-provider:
         condition: service_started
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-provider.yaml
       GOREST_PUBLIC_URL: ${REST_PROVIDER_PUBLIC_URL:-http://127.0.0.1:8080}
-      GOREST_CORS_ALLOWED_ORIGINS: ${REST_CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
+      GOREST_CORS_ALLOWED_ORIGINS: ${REST_CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173}
       GOREST_IRODS_HOST: irods-provider
       GOREST_IRODS_PORT: 1247
       GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
@@ -151,14 +151,14 @@ services:
 
   irods-go-rest-resource:
     image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:develop}
-    profiles: ["frontend"]
+    profiles: ["frontend", "rest"]
     depends_on:
       irods-resource:
         condition: service_healthy
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-resource.yaml
       GOREST_PUBLIC_URL: ${REST_RESOURCE_PUBLIC_URL:-http://127.0.0.1:8082}
-      GOREST_CORS_ALLOWED_ORIGINS: ${REST_CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
+      GOREST_CORS_ALLOWED_ORIGINS: ${REST_CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173}
       GOREST_IRODS_HOST: irods-resource
       GOREST_IRODS_PORT: 1247
       GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
@@ -181,10 +181,7 @@ services:
 
   starbase:
     image: ${STARBASE_IMAGE:-ghcr.io/michael-conway/starbase:develop}
-    profiles: ["frontend"]
-    depends_on:
-      irods-go-rest-provider:
-        condition: service_started
+    profiles: ["frontend", "starbase"]
     environment:
       STARBASE_TITLE: ${STARBASE_TITLE:-Starbase}
       STARBASE_SUBTITLE: ${STARBASE_SUBTITLE:-iRODS Grid Stack}
@@ -198,7 +195,7 @@ services:
 
   irods-go-drs:
     image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:develop}
-    profiles: ["frontend"]
+    profiles: ["frontend", "drs"]
     depends_on:
       irods-provider:
         condition: service_started

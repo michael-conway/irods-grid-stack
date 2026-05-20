@@ -57,7 +57,8 @@ the caller is explicitly testing container-internal clients.
 
 ## 7. Keep frontend/API services optional
 
-REST, DRS, and Starbase use the `frontend` compose profile. The provider,
-resource server, Keycloak, and S3 API endpoints are part of the default compose
-stack so `docker compose up` is useful as a backend-only development grid, while
+The provider, resource server, Keycloak, and S3 API endpoints are part of the
+default compose stack so `docker compose up` is useful as a backend-only
+development grid. REST, DRS, and Starbase are available through individual
+profiles (`rest`, `drs`, `starbase`) and the aggregate `frontend` profile.
 `docker compose --profile frontend up` starts the complete service stack.
