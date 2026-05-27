@@ -21,7 +21,11 @@ FROM quay.io/keycloak/keycloak:latest
 
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY realm-drs.json /opt/keycloak/data/import/realm-drs.json
+COPY start-keycloak.sh /opt/keycloak/start-keycloak.sh
+USER root
+RUN chmod 0755 /opt/keycloak/start-keycloak.sh
+USER keycloak
 
 RUN /opt/keycloak/bin/kc.sh show-config
 
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start-dev", "--import-realm"]
+ENTRYPOINT ["/opt/keycloak/start-keycloak.sh"]

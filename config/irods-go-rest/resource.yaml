@@ -1,6 +1,9 @@
 PublicURL: http://127.0.0.1:8082
 ListenAddr: :8080
 RestLogLevel: info
+CORSAllowedOrigins:
+  - http://localhost:8081
+  - http://127.0.0.1:8081
 
 IrodsHost: irods-resource
 IrodsPort: 1247

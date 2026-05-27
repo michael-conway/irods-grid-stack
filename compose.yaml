@@ -52,6 +52,12 @@ services:
       - "${IRODS_PROVIDER_DATA_PORT_RANGE:-20000-20199}:20000-20199"
     cap_add:
       - SYS_ADMIN
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /root/.irods/irods_environment.json && IRODS_ENVIRONMENT_FILE=/root/.irods/irods_environment.json iadmin lr >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
 
   irods-resource:
     hostname: irods-resource
@@ -63,7 +69,7 @@ services:
     pull_policy: build
     depends_on:
       irods-provider:
-        condition: service_started
+        condition: service_healthy
     environment:
       IRODS_ZONE: ${IRODS_ZONE:-tempZone}
       IRODS_ADMIN_USER: ${IRODS_ADMIN_USER:-rods}
@@ -121,6 +127,7 @@ services:
 
   irods-go-rest-provider:
     image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    platform: linux/amd64
     profiles: ["frontend"]
     depends_on:
       irods-provider:
@@ -150,6 +157,7 @@ services:
 
   irods-go-rest-resource:
     image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    platform: linux/amd64
     profiles: ["frontend"]
     depends_on:
       irods-resource:
@@ -179,6 +187,7 @@ services:
 
   starbase:
     image: ${STARBASE_IMAGE:-ghcr.io/michael-conway/starbase:develop}
+    platform: linux/amd64
     profiles: ["frontend"]
     depends_on:
       irods-go-rest-provider:
@@ -190,6 +199,7 @@ services:
 
   irods-go-drs:
     image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:latest}
+    platform: linux/amd64
     profiles: ["frontend"]
     depends_on:
       irods-provider:
@@ -226,9 +236,13 @@ services:
 
   irods-s3-api-provider:
     image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
+    platform: linux/amd64
     depends_on:
       irods-provider:
-        condition: service_started
+        condition: service_healthy
+    environment:
+      S3_UPSTREAM_IRODS_HOST: irods-provider
+      S3_UPSTREAM_IRODS_PORT: 1247
     volumes:
       - ./config/s3/irods-s3-api-entrypoint.sh:/irods-s3-api-entrypoint.sh:ro
       - ./config/s3/provider.json:/config-template.json:ro
@@ -239,9 +253,13 @@ services:
 
   irods-s3-api-resource:
     image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
+    platform: linux/amd64
     depends_on:
       irods-resource:
         condition: service_healthy
+    environment:
+      S3_UPSTREAM_IRODS_HOST: irods-resource
+      S3_UPSTREAM_IRODS_PORT: 1247
     volumes:
       - ./config/s3/irods-s3-api-entrypoint.sh:/irods-s3-api-entrypoint.sh:ro
       - ./config/s3/resource.json:/config-template.json:ro

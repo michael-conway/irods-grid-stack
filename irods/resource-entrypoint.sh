@@ -19,6 +19,8 @@ IFS=$'\n\t'
 : "${IRODS_PORT_RANGE_END:=20199}"
 : "${IRODS_PROVIDER_READY_RETRIES:=90}"
 : "${IRODS_READY_RETRIES:=60}"
+: "${IRODS_SETUP_RETRIES:=5}"
+: "${IRODS_SETUP_RETRY_DELAY_SECONDS:=3}"
 
 SETUP_ANSWERS=/tmp/irods_resource_setup_answers.json
 PROVIDER_ENV=/tmp/provider_irods_environment.json
@@ -323,14 +325,21 @@ run_setup() {
   local setup_py
   setup_py="$(find_setup_py)"
 
-  log "running iRODS consumer setup via $setup_py"
-  if python3 "$setup_py" --json_configuration_file "$SETUP_ANSWERS" > /tmp/setup_irods_resource.log 2>&1; then
-    log "iRODS consumer setup completed"
-    return 0
-  fi
+  for attempt in $(seq 1 "$IRODS_SETUP_RETRIES"); do
+    log "running iRODS consumer setup via $setup_py (attempt ${attempt}/${IRODS_SETUP_RETRIES})"
+    if python3 "$setup_py" --json_configuration_file "$SETUP_ANSWERS" > /tmp/setup_irods_resource.log 2>&1; then
+      log "iRODS consumer setup completed"
+      return 0
+    fi
 
-  log "ERROR: iRODS consumer setup failed"
-  cat /tmp/setup_irods_resource.log
+    log "setup attempt ${attempt}/${IRODS_SETUP_RETRIES} failed"
+    cat /tmp/setup_irods_resource.log
+    if [ "$attempt" -lt "$IRODS_SETUP_RETRIES" ]; then
+      sleep "$IRODS_SETUP_RETRY_DELAY_SECONDS"
+    fi
+  done
+
+  log "ERROR: iRODS consumer setup failed after ${IRODS_SETUP_RETRIES} attempts"
   return 1
 }
 
