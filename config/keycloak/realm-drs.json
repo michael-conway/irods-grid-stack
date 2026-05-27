@@ -58,17 +58,26 @@
       "fullScopeAllowed": false,
       "redirectUris": [
         "http://localhost:8080/web/callback",
-        "http://127.0.0.1:8080/web/callback",
-        "http://localhost:8082/web/callback",
-        "http://127.0.0.1:8082/web/callback"
+        "http://localhost:8082/web/callback"
       ],
       "webOrigins": [
         "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:8082",
-        "http://127.0.0.1:8082"
+        "http://localhost:8082"
       ],
-      "protocolMappers": []
+      "protocolMappers": [
+        {
+          "name": "audience-irods-go-rest",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "irods-go-rest",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     }
   ]
 }

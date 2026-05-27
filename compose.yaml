@@ -134,7 +134,7 @@ services:
         condition: service_started
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-provider.yaml
-      GOREST_PUBLIC_URL: ${REST_PROVIDER_PUBLIC_URL:-http://127.0.0.1:8080}
+      GOREST_PUBLIC_URL: ${REST_PROVIDER_PUBLIC_URL:-http://localhost:8080}
       GOREST_IRODS_HOST: irods-provider
       GOREST_IRODS_PORT: 1247
       GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
@@ -144,6 +144,7 @@ services:
       GOREST_TEST_RESOURCE1: ${IRODS_PROVIDER_RESOURCE:-providerResc}
       GOREST_TEST_RESOURCE2: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
       GOREST_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
+      GOREST_OIDC_AUTH_URL: ${OIDC_WEB_URL:-https://localhost:8443}
       GOREST_OIDC_CLIENT_ID: ${IRODS_REST_WEB_CLIENT_ID:-irods-go-rest}
       GOREST_OIDC_CLIENT_SECRET: ${IRODS_REST_WEB_CLIENT_SECRET:-change-me}
       GOREST_OIDC_REALM: ${OIDC_REALM:-drs}
@@ -164,7 +165,7 @@ services:
         condition: service_healthy
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-resource.yaml
-      GOREST_PUBLIC_URL: ${REST_RESOURCE_PUBLIC_URL:-http://127.0.0.1:8082}
+      GOREST_PUBLIC_URL: ${REST_RESOURCE_PUBLIC_URL:-http://localhost:8082}
       GOREST_IRODS_HOST: irods-resource
       GOREST_IRODS_PORT: 1247
       GOREST_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
@@ -174,6 +175,7 @@ services:
       GOREST_TEST_RESOURCE1: ${IRODS_PROVIDER_RESOURCE:-providerResc}
       GOREST_TEST_RESOURCE2: ${IRODS_RESOURCE_RESOURCE:-resourceResc}
       GOREST_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
+      GOREST_OIDC_AUTH_URL: ${OIDC_WEB_URL:-https://localhost:8443}
       GOREST_OIDC_CLIENT_ID: ${IRODS_REST_WEB_CLIENT_ID:-irods-go-rest}
       GOREST_OIDC_CLIENT_SECRET: ${IRODS_REST_WEB_CLIENT_SECRET:-change-me}
       GOREST_OIDC_REALM: ${OIDC_REALM:-drs}
@@ -219,9 +221,9 @@ services:
       DRS_IRODS_SECONDARY_TEST_USER: ${IRODS_SECONDARY_TEST_USER:-test2}
       DRS_IRODS_SECONDARY_TEST_PASSWORD: ${IRODS_SECONDARY_TEST_PASSWORD:-test}
       DRS_IRODS_DEFAULT_RESOURCE: ${IRODS_PROVIDER_RESOURCE:-providerResc}
-      DRS_IRODS_ACCESS_HOST: ${DRS_IRODS_ACCESS_HOST:-127.0.0.1}
+      DRS_IRODS_ACCESS_HOST: ${DRS_IRODS_ACCESS_HOST:-localhost}
       DRS_IRODS_ACCESS_PORT: ${IRODS_PROVIDER_HOST_PORT:-1247}
-      DRS_HTTPS_ACCESS_METHOD_BASE_URL: ${DRS_HTTPS_ACCESS_METHOD_BASE_URL:-http://127.0.0.1:8080/api/v1/path/contents?irods_path=}
+      DRS_HTTPS_ACCESS_METHOD_BASE_URL: ${DRS_HTTPS_ACCESS_METHOD_BASE_URL:-http://localhost:8080/api/v1/path/contents?irods_path=}
       DRS_OIDC_URL: ${OIDC_INTERNAL_URL:-https://keycloak:8443}
       DRS_OIDC_CLIENT_ID: ${DRS_API_CLIENT_ID:-irods-go-drs}
       DRS_OIDC_CLIENT_SECRET: ${DRS_API_CLIENT_SECRET:-change-me}

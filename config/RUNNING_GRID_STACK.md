@@ -70,6 +70,7 @@ S3_RESOURCE_HOST_PORT=9002
 DRS_API_CLIENT_SECRET=change-me
 IRODS_REST_WEB_CLIENT_SECRET=change-me
 OIDC_INTERNAL_URL=https://keycloak:8443
+OIDC_WEB_URL=https://localhost:8443
 OIDC_INSECURE_SKIP_VERIFY=true
 ```
 
@@ -80,6 +81,11 @@ Keycloak is built locally as `irods-grid-keycloak:latest` from
 `config/keycloak/Dockerfile-keycloak`. It includes a development self-signed
 certificate and listens on HTTPS port `8443`; `KEYCLOAK_IMAGE` is intentionally
 not an operator override.
+
+`OIDC_WEB_URL` controls where `irods-go-rest` `/web/login` redirects browser
+users for Keycloak authentication. For local Docker Desktop use,
+`https://localhost:8443` keeps the browser callback flow aligned with the host
+published Keycloak endpoint.
 
 ## Config Files
 
@@ -160,13 +166,13 @@ Default public endpoints:
 
 | Service | URL |
 | --- | --- |
-| Provider REST | `http://127.0.0.1:8080` |
-| Resource REST | `http://127.0.0.1:8082` |
-| Starbase | `http://127.0.0.1:8081` |
-| DRS | `http://127.0.0.1:8888` |
-| Keycloak | `https://127.0.0.1:8443` |
-| Provider S3 API | `http://127.0.0.1:9001` |
-| Resource S3 API | `http://127.0.0.1:9002` |
+| Provider REST | `http://localhost:8080` |
+| Resource REST | `http://localhost:8082` |
+| Starbase | `http://localhost:8081` |
+| DRS | `http://localhost:8888` |
+| Keycloak | `https://localhost:8443` |
+| Provider S3 API | `http://localhost:9001` |
+| Resource S3 API | `http://localhost:9002` |
 
 ## AWS S3 Profiles
 
@@ -181,14 +187,14 @@ S3 API endpoints.
 [profile irods-grid-provider-s3]
 region = providerResc
 output = json
-endpoint_url = http://127.0.0.1:9001
+endpoint_url = http://localhost:9001
 s3 =
     addressing_style = path
 
 [profile irods-grid-resource-s3]
 region = resourceResc
 output = json
-endpoint_url = http://127.0.0.1:9002
+endpoint_url = http://localhost:9002
 s3 =
     addressing_style = path
 ```
@@ -215,8 +221,8 @@ aws --profile irods-grid-resource-s3 s3api list-objects-v2 --bucket testdrssingl
 ```
 
 If your AWS CLI version does not honor `endpoint_url` from the profile, pass
-`--endpoint-url http://127.0.0.1:9001` or
-`--endpoint-url http://127.0.0.1:9002` on the command line.
+`--endpoint-url http://localhost:9001` or
+`--endpoint-url http://localhost:9002` on the command line.
 
 Default internal service names used by config files:
 
@@ -235,14 +241,14 @@ service ports:
 ```bash
 docker compose --profile frontend ps
 
-curl -k -fsS https://127.0.0.1:8443/realms/drs/.well-known/openid-configuration
-curl -fsS http://127.0.0.1:8080/healthz
-curl -fsS http://127.0.0.1:8082/healthz
-curl -fsS http://127.0.0.1:8080/openapi.yaml | grep 'url: http://127.0.0.1:8080'
-curl -fsS http://127.0.0.1:8082/openapi.yaml | grep 'url: http://127.0.0.1:8082'
-curl -fsS http://127.0.0.1:8888/swagger | grep 'url: "/openapi.yaml"'
-curl -fsS http://127.0.0.1:8888/openapi.yaml | grep 'default: 127.0.0.1:8888'
-curl -fsS http://127.0.0.1:8888/ga4gh/drs/v1/service-info | grep 'iRODS Grid Stack DRS'
+curl -k -fsS https://localhost:8443/realms/drs/.well-known/openid-configuration
+curl -fsS http://localhost:8080/healthz
+curl -fsS http://localhost:8082/healthz
+curl -fsS http://localhost:8080/openapi.yaml | grep 'url: http://localhost:8080'
+curl -fsS http://localhost:8082/openapi.yaml | grep 'url: http://localhost:8082'
+curl -fsS http://localhost:8888/swagger | grep 'url: "/openapi.yaml"'
+curl -fsS http://localhost:8888/openapi.yaml | grep 'default: localhost:8888'
+curl -fsS http://localhost:8888/ga4gh/drs/v1/service-info | grep 'iRODS Grid Stack DRS'
 docker compose --profile frontend logs --tail=80 irods-s3-api-provider irods-s3-api-resource | grep 'Server is ready'
 docker compose --profile frontend exec -T irods-provider bash -lc 'printf "%s\n" "$IRODS_ADMIN_PASSWORD" | IRODS_ENVIRONMENT_FILE=/var/lib/irods/.irods/irods_environment.json iinit >/dev/null && IRODS_ENVIRONMENT_FILE=/var/lib/irods/.irods/irods_environment.json iadmin lr providerResc && IRODS_ENVIRONMENT_FILE=/var/lib/irods/.irods/irods_environment.json iadmin lr resourceResc'
 docker compose --profile frontend exec -T irods-resource bash -lc 'IRODS_ENVIRONMENT_FILE=/root/.irods/irods_environment.json iadmin lr resourceResc'
