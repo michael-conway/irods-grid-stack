@@ -63,7 +63,7 @@ DefaultTicketUseLimit: 50
 
 OidcUrl: https://keycloak:8443
 OidcClientId: irods-go-drs
-OidcClientSecret: change-me
+OidcClientSecret: secret1
 OidcClientSecretFile:
 OidcRealm: drs
 OidcScope: openid profile email

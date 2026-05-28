@@ -67,11 +67,19 @@ KEYCLOAK_MANAGEMENT_HOST_PORT=19090
 S3_PROVIDER_HOST_PORT=9001
 S3_RESOURCE_HOST_PORT=9002
 
-DRS_API_CLIENT_SECRET=change-me
-IRODS_REST_WEB_CLIENT_SECRET=change-me
+DRS_API_CLIENT_SECRET=secret1
+IRODS_REST_WEB_CLIENT_SECRET=secret2
+STARBASE_WEB_CLIENT_ID=starbase-spa
 OIDC_INTERNAL_URL=https://keycloak:8443
 OIDC_WEB_URL=https://localhost:8443
 OIDC_INSECURE_SKIP_VERIFY=true
+GOREST_WEB_ENABLED=true
+GOREST_TRUST_FORWARDED_HEADERS=false
+GOREST_HTTP_READ_TIMEOUT_SECONDS=30
+GOREST_HTTP_READ_HEADER_TIMEOUT_SECONDS=5
+GOREST_HTTP_WRITE_TIMEOUT_SECONDS=30
+GOREST_HTTP_IDLE_TIMEOUT_SECONDS=120
+GOREST_HTTP_MAX_HEADER_BYTES=1048576
 ```
 
 Do not commit `.env`; it can contain local secrets. The checked-in
@@ -86,6 +94,31 @@ not an operator override.
 users for Keycloak authentication. For local Docker Desktop use,
 `https://localhost:8443` keeps the browser callback flow aligned with the host
 published Keycloak endpoint.
+
+The imported Keycloak realm includes a public Starbase client
+(`STARBASE_WEB_CLIENT_ID`, default `starbase-spa`) configured for direct PKCE
+browser login with redirect URIs:
+
+- `http://localhost:8081/auth/callback` (published Starbase in compose)
+- `http://localhost:5173/auth/callback` (Starbase Vite dev mode outside compose)
+
+If you override `STARBASE_WEB_CLIENT_ID`, keep `config/starbase/starbase.yaml`
+`OIDCClientID` aligned with the same value.
+
+The Starbase client audience mapper currently targets `irods-go-rest` directly.
+If you override `IRODS_REST_WEB_CLIENT_ID`, update the audience mapper in
+`config/keycloak/realm-drs.json` to match.
+
+REST transport and proxy-hardening controls are exposed in `.env` and wired to
+both REST services:
+
+- `GOREST_WEB_ENABLED` (set `true` for local Starbase `/web/*` login flow)
+- `GOREST_TRUST_FORWARDED_HEADERS` (keep `false` unless behind a trusted proxy)
+- `GOREST_HTTP_READ_TIMEOUT_SECONDS`
+- `GOREST_HTTP_READ_HEADER_TIMEOUT_SECONDS`
+- `GOREST_HTTP_WRITE_TIMEOUT_SECONDS`
+- `GOREST_HTTP_IDLE_TIMEOUT_SECONDS`
+- `GOREST_HTTP_MAX_HEADER_BYTES`
 
 ## Config Files
 

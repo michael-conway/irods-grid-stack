@@ -1,5 +1,12 @@
 Title: Starbase
 Subtitle: iRODS Grid Stack
+RestAPIBaseURL: http://localhost:8080
+OIDCEndpoint: /web/login
+OIDCAuthorizationEndpoint: https://localhost:8443/realms/drs/protocol/openid-connect/auth
+OIDCTokenEndpoint: https://localhost:8443/realms/drs/protocol/openid-connect/token
+OIDCClientID: starbase-spa
+OIDCScope: openid profile email
+OIDCRedirectPath: /auth/callback
 S3AdminEnabled: true
 
 AuthMode:
@@ -7,4 +14,3 @@ AuthMode:
     AuthName: iRODS native
   - Mode: pam
     AuthName: iRODS PAM
-

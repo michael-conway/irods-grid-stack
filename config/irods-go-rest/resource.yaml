@@ -1,5 +1,12 @@
 PublicURL: http://localhost:8082
 ListenAddr: :8080
+WebEnabled: true
+TrustForwardedHeaders: false
+HTTPReadTimeoutSeconds: 30
+HTTPReadHeaderTimeoutSeconds: 5
+HTTPWriteTimeoutSeconds: 30
+HTTPIdleTimeoutSeconds: 120
+HTTPMaxHeaderBytes: 1048576
 RestLogLevel: info
 CORSAllowedOrigins:
   - http://localhost:8081
@@ -35,6 +42,7 @@ TestResource1: providerResc
 TestResource2: resourceResc
 
 OidcUrl: https://keycloak:8443
+OidcAuthUrl: https://localhost:8443
 OidcClientId: irods-go-rest
 OidcClientSecret: change-me
 OidcClientSecretFile:
