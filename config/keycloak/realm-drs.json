@@ -71,7 +71,19 @@
           "protocolMapper": "oidc-audience-mapper",
           "consentRequired": false,
           "config": {
-            "included.client.audience": "irods-go-rest",
+            "included.client.audience": "${IRODS_REST_WEB_CLIENT_ID}",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "audience-irods-go-drs",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "${DRS_API_CLIENT_ID}",
             "access.token.claim": "true",
             "id.token.claim": "false",
             "userinfo.token.claim": "false"
@@ -107,7 +119,19 @@
           "protocolMapper": "oidc-audience-mapper",
           "consentRequired": false,
           "config": {
-            "included.client.audience": "irods-go-rest",
+            "included.client.audience": "${IRODS_REST_WEB_CLIENT_ID}",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "audience-irods-go-drs",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "${DRS_API_CLIENT_ID}",
             "access.token.claim": "true",
             "id.token.claim": "false",
             "userinfo.token.claim": "false"

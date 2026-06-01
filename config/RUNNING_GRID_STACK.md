@@ -105,9 +105,10 @@ browser login with redirect URIs:
 If you override `STARBASE_WEB_CLIENT_ID`, keep `config/starbase/starbase.yaml`
 `OIDCClientID` aligned with the same value.
 
-The Starbase client audience mapper currently targets `irods-go-rest` directly.
-If you override `IRODS_REST_WEB_CLIENT_ID`, update the audience mapper in
-`config/keycloak/realm-drs.json` to match.
+The imported realm configures audience mappers for both `irods-go-rest` and
+`irods-go-drs` on web-login clients so browser access tokens can be validated by
+both APIs. Mapper targets are parameterized from `.env`
+(`IRODS_REST_WEB_CLIENT_ID`, `DRS_API_CLIENT_ID`).
 
 REST transport and proxy-hardening controls are exposed in `.env` and wired to
 both REST services:

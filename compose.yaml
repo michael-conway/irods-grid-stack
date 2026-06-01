@@ -226,6 +226,7 @@ services:
     environment:
       DRS_CONFIG_FILE: /etc/irods-grid/drs-config.yaml
       DRS_LISTEN_PORT: 8080
+      DRS_PUBLIC_URL: ${DRS_PUBLIC_URL:-http://localhost:8888}
       DRS_IRODS_HOST: irods-provider
       DRS_IRODS_PORT: 1247
       DRS_IRODS_ZONE: ${IRODS_ZONE:-tempZone}
