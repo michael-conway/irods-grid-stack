@@ -67,9 +67,11 @@ KEYCLOAK_MANAGEMENT_HOST_PORT=19090
 S3_PROVIDER_HOST_PORT=9001
 S3_RESOURCE_HOST_PORT=9002
 
-DRS_API_CLIENT_SECRET=secret1
-IRODS_REST_WEB_CLIENT_SECRET=secret2
-STARBASE_WEB_CLIENT_ID=starbase-spa
+# Forwarded to irods-go-rest as GOREST_CORS_ALLOWED_ORIGINS.
+REST_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173
+
+DRS_API_CLIENT_SECRET=change-me
+IRODS_REST_WEB_CLIENT_SECRET=change-me
 OIDC_INTERNAL_URL=https://keycloak:8443
 OIDC_WEB_URL=https://localhost:8443
 OIDC_INSECURE_SKIP_VERIFY=true
@@ -135,7 +137,8 @@ These files are intentionally checked in as runnable defaults:
 | `config/keycloak/Dockerfile-keycloak` | Local Keycloak image build with the development HTTPS keystore for port `8443`. |
 | `config/s3/provider.json` | Provider-side iRODS S3 API config template. |
 | `config/s3/resource.json` | Resource-side iRODS S3 API config template for the `9002` endpoint. |
-| `config/starbase/starbase.yaml` | Starbase runtime UI config. |
+| `config/starbase/starbase-entrypoint.sh` | Generates Starbase browser runtime config from `STARBASE_*` environment variables. |
+| `config/starbase/starbase.yaml` | Reference Starbase runtime UI config shape. Compose generates the active file at container startup. |
 
 Both S3 API instances mount `state/shared-s3/` at `/shared-s3-config` and use
 the same `irods-s3-bucket-mapping.json` and `irods-s3-user-mapping.json` files.
@@ -153,7 +156,7 @@ The provider entrypoint starts iRODS through the iRODS Python controller so
 provider-side replica trim/replicate calls can authenticate with the resource
 server correctly.
 
-Frontend services are intentionally profiled:
+Compose profiles are intentionally layered:
 
 | Profile | Services |
 | --- | --- |
@@ -207,6 +210,20 @@ Default public endpoints:
 | Keycloak | `https://localhost:8443` |
 | Provider S3 API | `http://localhost:9001` |
 | Resource S3 API | `http://localhost:9002` |
+
+Starbase reads `RestAPIBaseURL` from `/config/starbase.yaml` at browser startup
+and uses it as the default API base URL on the login page. In this stack, that
+file is generated when the container starts from `STARBASE_REST_API_BASE_URL`.
+The default is `http://localhost:8080`, matching provider REST and
+`REST_PROVIDER_PUBLIC_URL`. If you change `REST_PROVIDER_HOST_PORT` or
+`REST_PROVIDER_PUBLIC_URL`, update `STARBASE_REST_API_BASE_URL` to the matching
+browser-facing URL. `STARBASE_HOST_PORT` only changes where the Starbase UI is
+served from on the host; it does not change the REST API endpoint Starbase calls.
+
+Because Starbase and REST run on different host ports, provider and resource
+REST also receive `GOREST_CORS_ALLOWED_ORIGINS` from
+`REST_CORS_ALLOWED_ORIGINS`. The default includes both `localhost:8081` and
+`localhost:8081` for containerized Starbase, plus `localhost:5173` for the Vite dev server.
 
 ## AWS S3 Profiles
 
