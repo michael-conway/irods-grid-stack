@@ -52,7 +52,7 @@ placement is tested meaningfully.
 ## 6. Use host-reachable URLs in returned access methods
 
 DRS access URLs should be usable by clients outside Docker. Config files should
-therefore use `http://127.0.0.1:<port>` for public URLs and access URLs unless
+therefore use `http://localhost:<port>` for public URLs and access URLs unless
 the caller is explicitly testing container-internal clients.
 
 ## 7. Keep frontend/API services optional

@@ -1,8 +1,13 @@
-# Reference config shape. Compose generates the active container config from
-# STARBASE_* environment variables in config/starbase/starbase-entrypoint.sh.
 Title: Starbase
 Subtitle: iRODS Grid Stack
-RestAPIBaseURL: http://127.0.0.1:8080
+RestAPIBaseURL: http://localhost:8080
+OIDCEndpoint: /web/login
+# oidc endpoint configs
+OIDCAuthorizationEndpoint: https://localhost:8443/realms/drs/protocol/openid-connect/auth
+OIDCTokenEndpoint: https://localhost:8443/realms/drs/protocol/openid-connect/token
+OIDCClientID: starbase-spa
+OIDCScope: openid profile email
+OIDCRedirectPath: /auth/callback
 S3AdminEnabled: true
 
 AuthMode:

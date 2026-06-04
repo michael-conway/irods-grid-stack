@@ -17,6 +17,8 @@ A Terminal container is also provided to run the `gocmd` and `drscmd` commands.
   as a resource host.
 - `irods-go-rest-provider` connects to the provider host.
 - `irods-go-rest-resource` connects to the resource host.
+- `starbase` points at the provider-side REST API by default.
+  It is configured for direct Keycloak PKCE login using the `drs` realm.
 - `starbase` points at the provider-side REST API by default through
   `STARBASE_REST_API_BASE_URL`, aligned with `REST_PROVIDER_PUBLIC_URL`.
 - `irods-s3-api-provider` exposes S3 access on host port `9001`.
@@ -88,15 +90,6 @@ docker compose --profile frontend config --quiet
 docker compose --profile frontend up -d --build
 ```
 
-Start only one frontend/API layer when needed:
-
-```bash
-docker compose --profile rest up -d --build
-docker compose --profile drs up -d --build
-docker compose --profile starbase up -d --build
-docker compose --profile rest --profile starbase up -d --build
-```
-
 `starbase` can point at any browser-reachable REST URL through
 `STARBASE_REST_API_BASE_URL`. Use `--profile rest --profile starbase` for the
 usual local Starbase plus provider REST pairing.
@@ -136,6 +129,15 @@ docker compose --profile frontend up -d --build
 ```
 
 ## Decision Records
+
+## OIDC Notes
+
+Keycloak realm import includes:
+
+- confidential REST web-login client (`irods-go-rest`) for `/web/login`
+- public Starbase SPA client (`starbase-spa`) for direct PKCE redirects:
+  - `http://localhost:8081/auth/callback` (compose Starbase)
+  - `http://localhost:5173/auth/callback` (local Starbase dev mode)
 
 Start with:
 

@@ -8,8 +8,7 @@ defaults for REST, DRS, Keycloak, Starbase, and S3.
 
 The default backend grid starts the provider, resource server, Keycloak, and
 both S3 API endpoints. The `frontend` profile adds provider REST, resource REST,
-DRS, and Starbase. The individual `rest`, `drs`, and `starbase` profiles can be
-used when only one frontend/API layer is needed.
+DRS, and Starbase.
 
 ```bash
 cp .env.example .env
@@ -27,15 +26,6 @@ For a backend-only development grid, omit the `frontend` profile:
 
 ```bash
 docker compose up -d --build
-```
-
-For targeted service layers, enable only the relevant profiles:
-
-```bash
-docker compose --profile rest up -d --build
-docker compose --profile drs up -d --build
-docker compose --profile starbase up -d --build
-docker compose --profile rest --profile starbase up -d --build
 ```
 
 To stop and restart the full stack without deleting persisted database/iRODS
@@ -62,8 +52,8 @@ IRODS_ZONE=tempZone
 IRODS_ADMIN_USER=rods
 IRODS_ADMIN_PASSWORD=rods
 
-IRODS_GO_REST_IMAGE=ghcr.io/michael-conway/irods-go-rest:develop
-IRODS_GO_DRS_IMAGE=ghcr.io/michael-conway/irods-go-drs:develop
+IRODS_GO_REST_IMAGE=ghcr.io/michael-conway/irods-go-rest:latest
+IRODS_GO_DRS_IMAGE=ghcr.io/michael-conway/irods-go-drs:latest
 STARBASE_IMAGE=ghcr.io/michael-conway/starbase:develop
 TERMINAL_IMAGE=irods-grid-terminal:local
 IRODS_S3_API_IMAGE=irods/irods_s3_api:latest
@@ -77,16 +67,21 @@ KEYCLOAK_MANAGEMENT_HOST_PORT=19090
 S3_PROVIDER_HOST_PORT=9001
 S3_RESOURCE_HOST_PORT=9002
 
-REST_PROVIDER_PUBLIC_URL=http://127.0.0.1:8080
-REST_RESOURCE_PUBLIC_URL=http://127.0.0.1:8082
-STARBASE_REST_API_BASE_URL=http://127.0.0.1:8080
 # Forwarded to irods-go-rest as GOREST_CORS_ALLOWED_ORIGINS.
 REST_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173
 
 DRS_API_CLIENT_SECRET=change-me
 IRODS_REST_WEB_CLIENT_SECRET=change-me
 OIDC_INTERNAL_URL=https://keycloak:8443
+OIDC_WEB_URL=https://localhost:8443
 OIDC_INSECURE_SKIP_VERIFY=true
+GOREST_WEB_ENABLED=true
+GOREST_TRUST_FORWARDED_HEADERS=false
+GOREST_HTTP_READ_TIMEOUT_SECONDS=30
+GOREST_HTTP_READ_HEADER_TIMEOUT_SECONDS=5
+GOREST_HTTP_WRITE_TIMEOUT_SECONDS=30
+GOREST_HTTP_IDLE_TIMEOUT_SECONDS=120
+GOREST_HTTP_MAX_HEADER_BYTES=1048576
 ```
 
 Do not commit `.env`; it can contain local secrets. The checked-in
@@ -96,6 +91,37 @@ Keycloak is built locally as `irods-grid-keycloak:latest` from
 `config/keycloak/Dockerfile-keycloak`. It includes a development self-signed
 certificate and listens on HTTPS port `8443`; `KEYCLOAK_IMAGE` is intentionally
 not an operator override.
+
+`OIDC_WEB_URL` controls where `irods-go-rest` `/web/login` redirects browser
+users for Keycloak authentication. For local Docker Desktop use,
+`https://localhost:8443` keeps the browser callback flow aligned with the host
+published Keycloak endpoint.
+
+The imported Keycloak realm includes a public Starbase client
+(`STARBASE_WEB_CLIENT_ID`, default `starbase-spa`) configured for direct PKCE
+browser login with redirect URIs:
+
+- `http://localhost:8081/auth/callback` (published Starbase in compose)
+- `http://localhost:5173/auth/callback` (Starbase Vite dev mode outside compose)
+
+If you override `STARBASE_WEB_CLIENT_ID`, keep `config/starbase/starbase.yaml`
+`OIDCClientID` aligned with the same value.
+
+The imported realm configures audience mappers for both `irods-go-rest` and
+`irods-go-drs` on web-login clients so browser access tokens can be validated by
+both APIs. Mapper targets are parameterized from `.env`
+(`IRODS_REST_WEB_CLIENT_ID`, `DRS_API_CLIENT_ID`).
+
+REST transport and proxy-hardening controls are exposed in `.env` and wired to
+both REST services:
+
+- `GOREST_WEB_ENABLED` (set `true` for local Starbase `/web/*` login flow)
+- `GOREST_TRUST_FORWARDED_HEADERS` (keep `false` unless behind a trusted proxy)
+- `GOREST_HTTP_READ_TIMEOUT_SECONDS`
+- `GOREST_HTTP_READ_HEADER_TIMEOUT_SECONDS`
+- `GOREST_HTTP_WRITE_TIMEOUT_SECONDS`
+- `GOREST_HTTP_IDLE_TIMEOUT_SECONDS`
+- `GOREST_HTTP_MAX_HEADER_BYTES`
 
 ## Config Files
 
@@ -134,17 +160,7 @@ Compose profiles are intentionally layered:
 
 | Profile | Services |
 | --- | --- |
-| default / no profile | `postgres`, `irods-provider`, `irods-resource`, `keycloak`, `irods-s3-api-provider`, `irods-s3-api-resource` |
-| `rest` | `irods-go-rest-provider`, `irods-go-rest-resource` |
-| `drs` | `irods-go-drs` |
-| `starbase` | `starbase` |
 | `frontend` | `irods-go-rest-provider`, `irods-go-rest-resource`, `irods-go-drs`, `starbase` |
-| `tools` | `terminal` |
-
-`starbase` can start by itself because it is a static frontend, but it still
-expects the URL in `STARBASE_REST_API_BASE_URL` to be reachable from the
-browser. For the local stack, use `--profile rest --profile starbase` when you
-want Compose to start provider REST with Starbase.
 
 If you change host ports in `.env`, also review the URLs in
 `config/irods-go-drs/drs-config.yaml`, especially `HttpsResourceAffinity` and
@@ -187,18 +203,18 @@ Default public endpoints:
 
 | Service | URL |
 | --- | --- |
-| Provider REST | `http://127.0.0.1:8080` |
-| Resource REST | `http://127.0.0.1:8082` |
-| Starbase | `http://127.0.0.1:8081` |
-| DRS | `http://127.0.0.1:8888` |
-| Keycloak | `https://127.0.0.1:8443` |
-| Provider S3 API | `http://127.0.0.1:9001` |
-| Resource S3 API | `http://127.0.0.1:9002` |
+| Provider REST | `http://localhost:8080` |
+| Resource REST | `http://localhost:8082` |
+| Starbase | `http://localhost:8081` |
+| DRS | `http://localhost:8888` |
+| Keycloak | `https://localhost:8443` |
+| Provider S3 API | `http://localhost:9001` |
+| Resource S3 API | `http://localhost:9002` |
 
 Starbase reads `RestAPIBaseURL` from `/config/starbase.yaml` at browser startup
 and uses it as the default API base URL on the login page. In this stack, that
 file is generated when the container starts from `STARBASE_REST_API_BASE_URL`.
-The default is `http://127.0.0.1:8080`, matching provider REST and
+The default is `http://localhost:8080`, matching provider REST and
 `REST_PROVIDER_PUBLIC_URL`. If you change `REST_PROVIDER_HOST_PORT` or
 `REST_PROVIDER_PUBLIC_URL`, update `STARBASE_REST_API_BASE_URL` to the matching
 browser-facing URL. `STARBASE_HOST_PORT` only changes where the Starbase UI is
@@ -207,8 +223,7 @@ served from on the host; it does not change the REST API endpoint Starbase calls
 Because Starbase and REST run on different host ports, provider and resource
 REST also receive `GOREST_CORS_ALLOWED_ORIGINS` from
 `REST_CORS_ALLOWED_ORIGINS`. The default includes both `localhost:8081` and
-`127.0.0.1:8081` for containerized Starbase, plus `localhost:5173` and
-`127.0.0.1:5173` for the Vite dev server.
+`localhost:8081` for containerized Starbase, plus `localhost:5173` for the Vite dev server.
 
 ## AWS S3 Profiles
 
@@ -223,14 +238,14 @@ S3 API endpoints.
 [profile irods-grid-provider-s3]
 region = providerResc
 output = json
-endpoint_url = http://127.0.0.1:9001
+endpoint_url = http://localhost:9001
 s3 =
     addressing_style = path
 
 [profile irods-grid-resource-s3]
 region = resourceResc
 output = json
-endpoint_url = http://127.0.0.1:9002
+endpoint_url = http://localhost:9002
 s3 =
     addressing_style = path
 ```
@@ -257,8 +272,8 @@ aws --profile irods-grid-resource-s3 s3api list-objects-v2 --bucket testdrssingl
 ```
 
 If your AWS CLI version does not honor `endpoint_url` from the profile, pass
-`--endpoint-url http://127.0.0.1:9001` or
-`--endpoint-url http://127.0.0.1:9002` on the command line.
+`--endpoint-url http://localhost:9001` or
+`--endpoint-url http://localhost:9002` on the command line.
 
 Default internal service names used by config files:
 
@@ -277,14 +292,14 @@ service ports:
 ```bash
 docker compose --profile frontend ps
 
-curl -k -fsS https://127.0.0.1:8443/realms/drs/.well-known/openid-configuration
-curl -fsS http://127.0.0.1:8080/healthz
-curl -fsS http://127.0.0.1:8082/healthz
-curl -fsS http://127.0.0.1:8080/openapi.yaml | grep 'url: http://127.0.0.1:8080'
-curl -fsS http://127.0.0.1:8082/openapi.yaml | grep 'url: http://127.0.0.1:8082'
-curl -fsS http://127.0.0.1:8888/swagger | grep 'url: "/openapi.yaml"'
-curl -fsS http://127.0.0.1:8888/openapi.yaml | grep 'default: 127.0.0.1:8888'
-curl -fsS http://127.0.0.1:8888/ga4gh/drs/v1/service-info | grep 'iRODS Grid Stack DRS'
+curl -k -fsS https://localhost:8443/realms/drs/.well-known/openid-configuration
+curl -fsS http://localhost:8080/healthz
+curl -fsS http://localhost:8082/healthz
+curl -fsS http://localhost:8080/openapi.yaml | grep 'url: http://localhost:8080'
+curl -fsS http://localhost:8082/openapi.yaml | grep 'url: http://localhost:8082'
+curl -fsS http://localhost:8888/swagger | grep 'url: "/openapi.yaml"'
+curl -fsS http://localhost:8888/openapi.yaml | grep 'default: localhost:8888'
+curl -fsS http://localhost:8888/ga4gh/drs/v1/service-info | grep 'iRODS Grid Stack DRS'
 docker compose --profile frontend logs --tail=80 irods-s3-api-provider irods-s3-api-resource | grep 'Server is ready'
 docker compose --profile frontend exec -T irods-provider bash -lc 'printf "%s\n" "$IRODS_ADMIN_PASSWORD" | IRODS_ENVIRONMENT_FILE=/var/lib/irods/.irods/irods_environment.json iinit >/dev/null && IRODS_ENVIRONMENT_FILE=/var/lib/irods/.irods/irods_environment.json iadmin lr providerResc && IRODS_ENVIRONMENT_FILE=/var/lib/irods/.irods/irods_environment.json iadmin lr resourceResc'
 docker compose --profile frontend exec -T irods-resource bash -lc 'IRODS_ENVIRONMENT_FILE=/root/.irods/irods_environment.json iadmin lr resourceResc'
