@@ -101,6 +101,8 @@ services:
     build:
       context: ./config/keycloak
       dockerfile: Dockerfile-keycloak
+      args:
+        KEYCLOAK_BASE_IMAGE: ${KEYCLOAK_BASE_IMAGE:-quay.io/keycloak/keycloak:26.6}
     image: irods-grid-keycloak:latest
     environment:
       KC_DB: postgres
@@ -125,14 +127,20 @@ services:
     ports:
       - "${KEYCLOAK_HTTPS_HOST_PORT:-8443}:8443"
       - "${KEYCLOAK_MANAGEMENT_HOST_PORT:-19090}:9000"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/8443'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   irods-go-rest-provider:
-    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:1.0.0-alpha}
     platform: linux/amd64
-    profiles: ["frontend"]
+    profiles: ["frontend", "rest", "starbase"]
     depends_on:
       irods-provider:
-        condition: service_started
+        condition: service_healthy
     environment:
       IRODS_REST_CONFIG_FILE: /etc/irods-grid/rest-provider.yaml
       GOREST_PUBLIC_URL: ${REST_PROVIDER_PUBLIC_URL:-http://localhost:8080}
@@ -164,11 +172,17 @@ services:
       - ./state/shared-s3:/shared-s3-config
     ports:
       - "${REST_PROVIDER_HOST_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/healthz >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
   irods-go-rest-resource:
-    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:latest}
+    image: ${IRODS_GO_REST_IMAGE:-ghcr.io/michael-conway/irods-go-rest:1.0.0-alpha}
     platform: linux/amd64
-    profiles: ["frontend"]
+    profiles: ["frontend", "rest"]
     depends_on:
       irods-resource:
         condition: service_healthy
@@ -203,34 +217,52 @@ services:
       - ./state/shared-s3:/shared-s3-config
     ports:
       - "${REST_RESOURCE_HOST_PORT:-8082}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/healthz >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
   starbase:
-    image: ${STARBASE_IMAGE:-ghcr.io/michael-conway/starbase:develop}
+    image: ${STARBASE_IMAGE:-ghcr.io/michael-conway/starbase:1.0.0-alpha}
     platform: linux/amd64
-    profiles: ["frontend"]
+    profiles: ["frontend", "starbase"]
     depends_on:
       irods-go-rest-provider:
-        condition: service_started
+        condition: service_healthy
     environment:
       STARBASE_TITLE: ${STARBASE_TITLE:-Starbase}
       STARBASE_SUBTITLE: ${STARBASE_SUBTITLE:-iRODS Grid Stack}
       STARBASE_REST_API_BASE_URL: ${STARBASE_REST_API_BASE_URL:-${REST_PROVIDER_PUBLIC_URL:-http://127.0.0.1:8080}}
+      STARBASE_OIDC_ENDPOINT: ${STARBASE_OIDC_ENDPOINT:-/web/login}
+      STARBASE_OIDC_AUTHORIZATION_ENDPOINT: ${STARBASE_OIDC_AUTHORIZATION_ENDPOINT:-https://localhost:8443/realms/drs/protocol/openid-connect/auth}
+      STARBASE_OIDC_TOKEN_ENDPOINT: ${STARBASE_OIDC_TOKEN_ENDPOINT:-https://localhost:8443/realms/drs/protocol/openid-connect/token}
+      STARBASE_OIDC_CLIENT_ID: ${STARBASE_OIDC_CLIENT_ID:-${STARBASE_WEB_CLIENT_ID:-starbase-spa}}
+      STARBASE_OIDC_SCOPE: ${STARBASE_OIDC_SCOPE:-${OIDC_SCOPE:-openid profile email}}
+      STARBASE_OIDC_REDIRECT_PATH: ${STARBASE_OIDC_REDIRECT_PATH:-/auth/callback}
       STARBASE_S3_ADMIN_ENABLED: ${STARBASE_S3_ADMIN_ENABLED:-true}
     volumes:
       - ./config/starbase/starbase-entrypoint.sh:/etc/irods-grid/starbase-entrypoint.sh:ro
     command: ["/bin/sh", "/etc/irods-grid/starbase-entrypoint.sh"]
     ports:
       - "${STARBASE_HOST_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/www/starbase/config/starbase.yaml && grep -q '^OIDCClientID:' /var/www/starbase/config/starbase.yaml"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   irods-go-drs:
-    image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:latest}
+    image: ${IRODS_GO_DRS_IMAGE:-ghcr.io/michael-conway/irods-go-drs:1.0.0-alpha}
     platform: linux/amd64
-    profiles: ["frontend"]
+    profiles: ["frontend", "drs"]
     depends_on:
       irods-provider:
-        condition: service_started
+        condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     environment:
       DRS_CONFIG_FILE: /etc/irods-grid/drs-config.yaml
       DRS_LISTEN_PORT: 8080
@@ -259,9 +291,15 @@ services:
       - ./config/irods-go-drs/service-info.json:/etc/irods-grid/service-info.json:ro
     ports:
       - "${DRS_HOST_PORT:-8888}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ga4gh/drs/v1/service-info >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
   irods-s3-api-provider:
-    image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
+    image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:0.5.0}
     platform: linux/amd64
     depends_on:
       irods-provider:
@@ -276,9 +314,15 @@ services:
     ports:
       - "${S3_PROVIDER_HOST_PORT:-9001}:9000"
     entrypoint: ["/bin/sh", "/irods-s3-api-entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "pidof irods_s3_api >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
   irods-s3-api-resource:
-    image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:latest}
+    image: ${IRODS_S3_API_IMAGE:-irods/irods_s3_api:0.5.0}
     platform: linux/amd64
     depends_on:
       irods-resource:
@@ -293,6 +337,12 @@ services:
     ports:
       - "${S3_RESOURCE_HOST_PORT:-9002}:9000"
     entrypoint: ["/bin/sh", "/irods-s3-api-entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "pidof irods_s3_api >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
   terminal:
     profiles: ["tools"]
@@ -300,8 +350,8 @@ services:
       context: ./terminal
       dockerfile: Dockerfile
       args:
-        GOCOMMANDS_REF: ${TERMINAL_GOCOMMANDS_REF:-latest}
-        IRODS_GO_DRS_REF: ${TERMINAL_IRODS_GO_DRS_REF:-develop}
+        GOCOMMANDS_REF: ${TERMINAL_GOCOMMANDS_REF:-v0.11.6}
+        IRODS_GO_DRS_REF: ${TERMINAL_IRODS_GO_DRS_REF:-1.0.0-alpha}
     image: ${TERMINAL_IMAGE:-irods-grid-terminal:local}
     depends_on:
       irods-provider:

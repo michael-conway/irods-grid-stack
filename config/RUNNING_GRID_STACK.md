@@ -52,11 +52,12 @@ IRODS_ZONE=tempZone
 IRODS_ADMIN_USER=rods
 IRODS_ADMIN_PASSWORD=rods
 
-IRODS_GO_REST_IMAGE=ghcr.io/michael-conway/irods-go-rest:latest
-IRODS_GO_DRS_IMAGE=ghcr.io/michael-conway/irods-go-drs:latest
-STARBASE_IMAGE=ghcr.io/michael-conway/starbase:develop
+IRODS_GO_REST_IMAGE=ghcr.io/michael-conway/irods-go-rest:1.0.0-alpha
+IRODS_GO_DRS_IMAGE=ghcr.io/michael-conway/irods-go-drs:1.0.0-alpha
+STARBASE_IMAGE=ghcr.io/michael-conway/starbase:1.0.0-alpha
+KEYCLOAK_BASE_IMAGE=quay.io/keycloak/keycloak:26.6
 TERMINAL_IMAGE=irods-grid-terminal:local
-IRODS_S3_API_IMAGE=irods/irods_s3_api:latest
+IRODS_S3_API_IMAGE=irods/irods_s3_api:0.5.0
 
 REST_PROVIDER_HOST_PORT=8080
 REST_RESOURCE_HOST_PORT=8082
@@ -69,6 +70,13 @@ S3_RESOURCE_HOST_PORT=9002
 
 # Forwarded to irods-go-rest as GOREST_CORS_ALLOWED_ORIGINS.
 REST_CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173
+
+STARBASE_OIDC_ENDPOINT=/web/login
+STARBASE_OIDC_AUTHORIZATION_ENDPOINT=https://localhost:8443/realms/drs/protocol/openid-connect/auth
+STARBASE_OIDC_TOKEN_ENDPOINT=https://localhost:8443/realms/drs/protocol/openid-connect/token
+STARBASE_OIDC_CLIENT_ID=starbase-spa
+STARBASE_OIDC_SCOPE=openid profile email
+STARBASE_OIDC_REDIRECT_PATH=/auth/callback
 
 DRS_API_CLIENT_SECRET=change-me
 IRODS_REST_WEB_CLIENT_SECRET=change-me
@@ -88,9 +96,10 @@ Do not commit `.env`; it can contain local secrets. The checked-in
 `.env.example` documents the full current set of supported variables.
 
 Keycloak is built locally as `irods-grid-keycloak:latest` from
-`config/keycloak/Dockerfile-keycloak`. It includes a development self-signed
-certificate and listens on HTTPS port `8443`; `KEYCLOAK_IMAGE` is intentionally
-not an operator override.
+`config/keycloak/Dockerfile-keycloak` using the pinned `KEYCLOAK_BASE_IMAGE`
+value. It includes a development self-signed certificate and listens on HTTPS
+port `8443`; `KEYCLOAK_IMAGE` is intentionally not an operator override because
+Compose tags the local build output.
 
 `OIDC_WEB_URL` controls where `irods-go-rest` `/web/login` redirects browser
 users for Keycloak authentication. For local Docker Desktop use,
@@ -105,7 +114,18 @@ browser login with redirect URIs:
 - `http://localhost:5173/auth/callback` (Starbase Vite dev mode outside compose)
 
 If you override `STARBASE_WEB_CLIENT_ID`, keep `config/starbase/starbase.yaml`
-`OIDCClientID` aligned with the same value.
+`OIDCClientID` and `.env` `STARBASE_OIDC_CLIENT_ID` aligned with the same value.
+
+The Starbase container generates `/config/starbase.yaml` at startup from
+`STARBASE_*` values. The generated demo config includes the OIDC fields expected
+by Starbase:
+
+- `OIDCEndpoint`
+- `OIDCAuthorizationEndpoint`
+- `OIDCTokenEndpoint`
+- `OIDCClientID`
+- `OIDCScope`
+- `OIDCRedirectPath`
 
 The imported realm configures audience mappers for both `irods-go-rest` and
 `irods-go-drs` on web-login clients so browser access tokens can be validated by
@@ -161,6 +181,16 @@ Compose profiles are intentionally layered:
 | Profile | Services |
 | --- | --- |
 | `frontend` | `irods-go-rest-provider`, `irods-go-rest-resource`, `irods-go-drs`, `starbase` |
+| `rest` | `irods-go-rest-provider`, `irods-go-rest-resource` |
+| `drs` | `irods-go-drs` |
+| `starbase` | `starbase`, plus provider REST through `depends_on` |
+| `tools` | `terminal` |
+
+The demo services define Compose health checks for REST `/healthz`, DRS
+`/ga4gh/drs/v1/service-info`, generated Starbase runtime config, Keycloak HTTPS
+readiness, and the S3 API process. These checks are intended to
+make first-run demos less race-prone; the smoke checks below still verify the
+public host-facing endpoints.
 
 If you change host ports in `.env`, also review the URLs in
 `config/irods-go-drs/drs-config.yaml`, especially `HttpsResourceAffinity` and
@@ -172,7 +202,9 @@ selection design.
 ## Terminal Container
 
 The `terminal` service is an on-demand tools shell. It builds a local image with
-both `gocmd` and `drscmd` installed on `PATH`.
+both `gocmd` and `drscmd` installed on `PATH`. The alpha demo pins
+`TERMINAL_GOCOMMANDS_REF` to `v0.11.6` and `TERMINAL_IRODS_GO_DRS_REF` to
+`1.0.0-alpha` through `.env.example`.
 
 Build it once:
 
@@ -195,7 +227,7 @@ docker compose run --rm terminal drscmd drsls /tempZone/home/test1
 
 At startup, the entrypoint writes a standard iRODS environment for
 `irods-provider:1247` using the `TERMINAL_IRODS_*` values from `.env`. The
-default user is `rods` in `tempZone`.
+default user is `test1` in `tempZone`.
 
 ## Current Defaults
 

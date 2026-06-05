@@ -11,12 +11,12 @@ The checked-in `S3ResourceAffinity` values are placeholders for that later
 verification pass. The S3 API endpoint regions are already aligned with the
 backing iRODS resource names: `providerResc` and `resourceResc`.
 
-## Health checks
+## End-to-end smoke automation
 
-Add health checks for:
+Compose now has container-level health checks for the demo services. The next
+step is to automate the host-facing checks from `config/RUNNING_GRID_STACK.md`
+so CI or a release script can verify:
 
-- provider iRODS readiness
-- provider REST `/healthz`
-- resource REST `/healthz`
-- DRS `/ga4gh/drs/v1/service-info`
-- S3 API list-buckets smoke check
+- public REST and DRS endpoints
+- Starbase runtime config and OIDC callback settings
+- S3 API list-buckets against both provider and resource endpoints

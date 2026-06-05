@@ -4,8 +4,8 @@ Docker Compose workspace for running a local multi-server iRODS grid with REST, 
 The grid is used for demo purposes and is not intended for production use. The
 default Compose stack starts the base services: iRODS provider, iRODS resource
 server, Keycloak, and both S3 API endpoints. The `frontend` profile starts REST,
-DRS, and Starbase together, while the `rest`, `drs`, and `starbase` profiles can
-be used independently during development.
+DRS, and Starbase together. The `rest`, `drs`, `starbase`, and `tools` profiles
+can be used independently during development.
 
 A Terminal container is also provided to run the `gocmd` and `drscmd` commands.
 
@@ -35,7 +35,7 @@ provider post-setup registers `providerResc`, and the resource server joins the
 provider as an iRODS 5 catalog consumer and registers `resourceResc` on
 `irods-resource`.
 
-The iRODS S3 API services use `irods/irods_s3_api:latest` by default and share
+The iRODS S3 API services use `irods/irods_s3_api:0.5.0` by default and share
 the bucket and user mapping files under `state/shared-s3/`. The provider S3 API
 uses region `providerResc`; the resource-server S3 API uses region
 `resourceResc`.
@@ -52,7 +52,9 @@ URL and keep `REST_CORS_ALLOWED_ORIGINS` aligned with the Starbase browser
 origins. Compose passes `REST_CORS_ALLOWED_ORIGINS` through to both REST
 instances as `GOREST_CORS_ALLOWED_ORIGINS`. The default includes the
 containerized Starbase origin on port `8081` and the Vite dev server origin on
-port `5173`, for both `localhost` and `127.0.0.1`.
+port `5173`, for both `localhost` and `127.0.0.1`. The container startup script
+also generates the Starbase OIDC settings from `STARBASE_OIDC_*` values so the
+demo config matches the imported Keycloak Starbase client.
 
 Runtime environment and config-file guidance starts in
 [config/RUNNING_GRID_STACK.md](config/RUNNING_GRID_STACK.md).
@@ -93,6 +95,18 @@ docker compose --profile frontend up -d --build
 `starbase` can point at any browser-reachable REST URL through
 `STARBASE_REST_API_BASE_URL`. Use `--profile rest --profile starbase` for the
 usual local Starbase plus provider REST pairing.
+
+Run only REST APIs:
+
+```bash
+docker compose --profile rest up -d --build
+```
+
+Run only DRS:
+
+```bash
+docker compose --profile drs up -d --build
+```
 
 Run a backend-only development grid by omitting the `frontend` profile:
 

@@ -1,4 +1,5 @@
-FROM quay.io/keycloak/keycloak:latest AS builder
+ARG KEYCLOAK_BASE_IMAGE=quay.io/keycloak/keycloak:26.6
+FROM ${KEYCLOAK_BASE_IMAGE} AS builder
 
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
@@ -17,7 +18,7 @@ RUN keytool -genkeypair \
     -ext "SAN:c=DNS:localhost,IP:127.0.0.1" \
     -keystore conf/server.keystore
 
-FROM quay.io/keycloak/keycloak:latest
+FROM ${KEYCLOAK_BASE_IMAGE}
 
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY realm-drs.json /opt/keycloak/data/import/realm-drs.json

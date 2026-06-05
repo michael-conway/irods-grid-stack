@@ -1,7 +1,7 @@
 FROM golang:1.25-alpine AS builder
 
-ARG GOCOMMANDS_REF=latest
-ARG IRODS_GO_DRS_REF=develop
+ARG GOCOMMANDS_REF=v0.11.6
+ARG IRODS_GO_DRS_REF=1.0.0-alpha
 
 RUN apk add --no-cache ca-certificates git
 
