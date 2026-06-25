@@ -6,9 +6,9 @@ defaults for REST, DRS, Keycloak, Starbase, and S3.
 
 ## Quick Start
 
-The default backend grid starts the provider, resource server, Keycloak, and
+The default backend grid starts the provider, resource server and
 both S3 API endpoints. The `frontend` profile adds provider REST, resource REST,
-DRS, and Starbase.
+DRS, Keycloak, and Starbase.
 
 ```bash
 cp .env.example .env
